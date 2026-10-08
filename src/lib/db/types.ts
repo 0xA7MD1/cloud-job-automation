@@ -112,8 +112,16 @@ export interface Company {
   description: string | null;
   source: "exa" | "tavily" | "ats" | "places" | "manual";
   place_id: string | null;
+  last_scanned_at: Timestamp | null;
   created_at: Timestamp;
   updated_at: Timestamp;
+}
+
+export interface UserCompany {
+  user_id: string;
+  company_id: string;
+  keywords: string[];
+  created_at: Timestamp;
 }
 
 export interface Job {

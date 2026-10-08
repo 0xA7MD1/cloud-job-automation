@@ -149,6 +149,18 @@ describe("shared tables", () => {
   });
 });
 
+describe("user_companies", () => {
+  it("lets users follow companies for themselves only", async () => {
+    const company = "aaaaaaaa-0000-0000-0000-000000000001";
+    expect((await as(A, `insert into public.user_companies (company_id) values ('${company}')`)).error).toBeUndefined();
+    expect(
+      (await as(A, `insert into public.user_companies (user_id, company_id) values ('${B}', '${company}')`)).error,
+    ).toBeDefined();
+    expect((await as(B, "select * from public.user_companies")).rows).toHaveLength(0);
+    expect((await as(A, "select company_id from public.user_companies")).rows).toHaveLength(1);
+  });
+});
+
 describe("chats", () => {
   it("rejects messages into someone else's chat", async () => {
     const chat = await as(A, "insert into public.chats (title) values ('c') returning id");

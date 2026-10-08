@@ -1,4 +1,5 @@
 import type { Provider } from "@/lib/db/types";
+import { discardBody } from "@/lib/http";
 
 export type VerifyResult =
   | { status: "valid"; models?: string[] }
@@ -20,6 +21,7 @@ async function call(url: string, init: RequestInit): Promise<Response | null> {
 function classify(response: Response | null): "ok" | "invalid" | "unknown" {
   if (!response) return "unknown";
   if (response.ok) return "ok";
+  discardBody(response);
   if (response.status === 401 || response.status === 403) return "invalid";
   // Google يرجّع 400 لمفتاح غلط
   if (response.status === 400) return "invalid";
@@ -91,6 +93,7 @@ export async function verifyProviderKey(provider: Provider, apiKey: string): Pro
     case "openrouter": {
       const res = await call("https://openrouter.ai/api/v1/key", { headers: bearer });
       const state = classify(res);
+      discardBody(res);
       if (state !== "ok") return { status: state === "invalid" ? "invalid" : "unknown" };
       // قائمة النماذج عامة: نختار الي تدعم الأدوات، والمجانية أول
       const list = await call("https://openrouter.ai/api/v1/models", {});
@@ -110,6 +113,7 @@ export async function verifyProviderKey(provider: Provider, apiKey: string): Pro
     case "tavily": {
       const res = await call("https://api.tavily.com/usage", { headers: bearer });
       const state = classify(res);
+      discardBody(res);
       return { status: state === "ok" ? "valid" : state };
     }
 
@@ -121,6 +125,7 @@ export async function verifyProviderKey(provider: Provider, apiKey: string): Pro
         body: JSON.stringify({ query: "company careers page", numResults: 1, type: "fast" }),
       });
       const state = classify(res);
+      discardBody(res);
       return { status: state === "ok" ? "valid" : state };
     }
 
@@ -129,6 +134,7 @@ export async function verifyProviderKey(provider: Provider, apiKey: string): Pro
         headers: { "steel-api-key": apiKey },
       });
       const state = classify(res);
+      discardBody(res);
       return { status: state === "ok" ? "valid" : state };
     }
   }

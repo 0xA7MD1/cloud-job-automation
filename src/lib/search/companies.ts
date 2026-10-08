@@ -1,4 +1,5 @@
 import { AGGREGATOR_DOMAINS, companyNameFromTitle, isAggregatorDomain, normalizeDomain } from "./domain";
+import { discardBody } from "@/lib/http";
 
 export type CompanySearchProvider = "tavily" | "exa";
 
@@ -74,8 +75,15 @@ async function post(url: string, headers: Record<string, string>, body: unknown,
   } catch {
     throw new SearchProviderError(provider, null);
   }
-  if (!response.ok) throw new SearchProviderError(provider, response.status);
-  return (await response.json()) as { results?: RawResult[] };
+  if (!response.ok) {
+    discardBody(response);
+    throw new SearchProviderError(provider, response.status);
+  }
+  try {
+    return (await response.json()) as { results?: RawResult[] };
+  } catch {
+    throw new SearchProviderError(provider, null);
+  }
 }
 
 /** بحث عن شركات بمفتاح المستخدم. المفتاح في الهيدر بس. */
