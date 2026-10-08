@@ -29,8 +29,10 @@
 ## التسليم
 **تم (الخطوات 1–3):**
 - الهيكل في جذر المشروع: `src/` (التطبيق)، `trigger/` (المهام)، `migrations/` (السكيمة)، `.env.example` (أسماء المتغيرات).
-- السكيمة: `migrations/20261009120000_init-schema.sql` (11 جدول) و`migrations/20261009120100_user-files-storage.sql` (سياسات الـbucket). **ما انطبقت للحين** — تنتظر الربط.
-- `pnpm typecheck` و`pnpm lint` و`pnpm test` و`pnpm build` تنجح بدون env (التحقق من env يصير وقت الطلب، مو وقت البناء).
+- السكيمة: `migrations/20261009120000_init-schema.sql` (12 جدول) و`migrations/20261009120100_user-files-storage.sql` (سياسات الـbucket). **ما انطبقت على InsForge للحين** — تنتظر الربط.
+- `migrations/schema.test.ts` يطبّق السكيمة على Postgres محلي (PGlite) فوق بديل لـInsForge ويختبر RLS والصلاحيات والحصة: ناجح. البديل مبني من migrations InsForge 036/045 في مستودعهم، فالتجربة على المشروع الحقيقي لازمة بعده.
+- `pnpm check` (lint + typecheck + 33 اختبار) و`pnpm build` تنجح بدون env (التحقق من env وقت الطلب، مو وقت البناء). الصفحات العامة تعرض RTL صح في المتصفح.
+- **ما انجرّب فعليًا:** التسجيل والدخول وOAuth والرفع والتنزيل، لأنها تحتاج مشروع InsForge. بدون `.env.local` أي صفحة محمية أو نموذج دخول يرمي خطأ «Missing InsForge baseUrl».
 
 **باقي (بالترتيب):**
 1. أحمد ينفّذ البنود فوق (الحسابات، الربط، تطبيق السكيمة، الـbucket، مزودي OAuth).

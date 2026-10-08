@@ -113,6 +113,7 @@
 ## الهيكل والأوامر
 
 - `src/app/` الواجهة ومسارات API · `src/lib/` المنطق المشترك · `trigger/` مهام Trigger.dev · `migrations/` سكيمة InsForge (`<14 رقم>_<اسم>.sql`)
+- أي تعديل على السكيمة: ملف migration جديد (لا تعدّل ملف انطبق)، وحدّث `src/lib/db/types.ts`، وأضف حالته في `migrations/schema.test.ts`
 - `pnpm dev` · `pnpm check` (lint + typecheck + test) · `pnpm build` · `pnpm trigger:dev`
 - تطبيق السكيمة: `npx @insforge/cli db migrations up --all` (بعد `link`)
 
