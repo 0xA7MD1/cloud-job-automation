@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { NavLinks } from "./_components/nav-links";
+import { NavLinks, NavLinksView } from "./_components/nav-links";
 import { UserMenu } from "./_components/user-menu";
 
 // الغلاف ثابت (يتحمّل فورًا)، وجزء المستخدم يتدفّق داخل Suspense لأنه يقرأ الجلسة.
@@ -13,7 +13,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Link href="/dashboard" className="font-semibold">
             مساعد التقديم
           </Link>
-          <NavLinks />
+          <Suspense fallback={<NavLinksView pathname={null} />}>
+            <NavLinks />
+          </Suspense>
           <div className="ms-auto">
             <Suspense fallback={<Skeleton className="h-7 w-32" />}>
               <UserMenu />

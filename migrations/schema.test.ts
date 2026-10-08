@@ -157,6 +157,11 @@ describe("chats", () => {
       as(user, `insert into public.messages (id, chat_id, role, parts) values ('m-${user}', '${chatId}', 'user', '[]')`);
     expect((await msg(B)).error).toBeDefined();
     expect((await msg(A)).error).toBeUndefined();
+
+    // الشات يحفظ بـ ON CONFLICT DO NOTHING (ما فيه صلاحية تعديل الرسائل)
+    const again = `insert into public.messages (id, chat_id, role, parts) values ('m-${A}', '${chatId}', 'user', '[]')`;
+    expect((await as(A, `${again} on conflict (id) do nothing`)).error).toBeUndefined();
+    expect((await as(A, `${again} on conflict (id) do update set parts = excluded.parts`)).error).toBeDefined();
   });
 });
 

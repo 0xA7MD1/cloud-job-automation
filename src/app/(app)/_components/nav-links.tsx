@@ -13,12 +13,12 @@ const LINKS = [
   { href: "/settings/keys", label: "المفاتيح" },
 ] as const;
 
-export function NavLinks() {
-  const pathname = usePathname();
+/** الروابط بدون تمييز الصفحة الحالية: تظهر في الغلاف الثابت لين يوصل المسار. */
+export function NavLinksView({ pathname }: { pathname: string | null }) {
   return (
     <nav className="-mx-1 flex items-center gap-1 overflow-x-auto text-sm">
       {LINKS.map(({ href, label }) => {
-        const active = pathname === href || pathname.startsWith(`${href}/`);
+        const active = !!pathname && (pathname === href || pathname.startsWith(`${href}/`));
         return (
           <Link
             key={href}
@@ -35,4 +35,9 @@ export function NavLinks() {
       })}
     </nav>
   );
+}
+
+/** usePathname قيمة وقت الطلب في المسارات الديناميكية ⇒ داخل <Suspense> في الغلاف. */
+export function NavLinks() {
+  return <NavLinksView pathname={usePathname()} />;
 }
