@@ -1,0 +1,6 @@
+onlyBuiltDependencies:
+  - esbuild
+ignoredBuiltDependencies:
+  - "@depot/cli"
+  - sharp
+  - unrs-resolver

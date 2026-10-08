@@ -77,7 +77,7 @@
 
 - **مفاتيح BYOK:** تُشفَّر في الخادم قبل الحفظ، مع `key_version` في كل صف للتدوير. الجدول بدون أي صلاحية قراءة للواجهة؛ الواجهة تشوف اسم المزود وآخر 4 أحرف فقط. المفتاح ما يروح للواجهة ولا للنموذج ولا للسجلات. **RLS مو تشفير.**
 - **Trigger.dev يحفظ مدخلات ومخرجات كل تشغيل ويعرضها في لوحته** ⇒ لا تمرّر مفتاحًا مفكوكًا ولا محتوى CV ولا توكن. مرّر معرّفات، وفك التشفير داخل المهمة الي تستخدمه.
-- **`createAdminClient` يتجاوز RLS وسياسات الملفات** ⇒ فقط في كود الخادم (مهام Trigger.dev)، ودائمًا بفلتر `user_id` صريح. بقية الكود يستخدم عميل الجلسة (`createServerClient` / `createBrowserClient`) عشان RLS يشتغل.
+- **`createAdminClient` يتجاوز RLS وسياسات الملفات** ⇒ عبر `src/lib/insforge/admin.ts` بس، وفي كود الخادم بس: مهام Trigger.dev، ومسارات Vercel الي تكتب الجداول المشتركة (`companies`، `jobs`) أو تقرأ المفتاح المشفّر. ودائمًا بفلتر `user_id` صريح على جداول المستخدم. بقية الكود يستخدم عميل الجلسة (`createServerClient` / `createBrowserClient`) عشان RLS يشتغل.
 - **Google Places:** احفظ `place_id` فقط. البيانات الي نجمعها من موقع الشركة نفسه تنحفظ عادي.
 - **Gemini المجاني** يستخدم البيانات لتحسين منتجات Google ⇒ مو افتراضي لبيانات CV، ونبّه المستخدم لو اختاره.
 - الحصص المجانية للحساب عند المزود، مو للمفتاح: مفتاحين من نفس حساب Groq ما يضاعفون الحد.
@@ -100,11 +100,21 @@
 
 | المتغير | أين | ملاحظة |
 |---|---|---|
-| `NEXT_PUBLIC_INSFORGE_URL` | Vercel (عام) | يقرأه `@insforge/sdk/ssr` تلقائيًا |
+| `NEXT_PUBLIC_APP_URL` | Vercel (عام) | رابط التطبيق، لروابط الرجوع من OAuth |
+| `NEXT_PUBLIC_INSFORGE_URL` | Vercel (عام) + Trigger.dev | يقرأه `@insforge/sdk/ssr` تلقائيًا |
 | `NEXT_PUBLIC_INSFORGE_ANON_KEY` | Vercel (عام) | يقرأه `@insforge/sdk/ssr` تلقائيًا |
 | `INSFORGE_API_KEY` | Vercel + Trigger.dev | مفتاح admin لـ`createAdminClient`، خادم فقط |
 | `BYOK_MASTER_KEY` | Vercel + Trigger.dev | 32 بايت base64 |
+| `TRIGGER_PROJECT_REF` | محليًا + CI | معرّف المشروع (`proj_...`) يقرأه `trigger.config.ts` |
 | `TRIGGER_SECRET_KEY` | Vercel | عشان التطبيق يشغّل المهام |
+
+القيم كلها تُقرأ عبر `readEnv()` في `src/lib/env.ts` (تتحقق بـZod وقت الاستخدام، فالبناء يشتغل بدون أسرار). الأسماء في `.env.example`.
+
+## الهيكل والأوامر
+
+- `src/app/` الواجهة ومسارات API · `src/lib/` المنطق المشترك · `trigger/` مهام Trigger.dev · `migrations/` سكيمة InsForge (`<14 رقم>_<اسم>.sql`)
+- `pnpm dev` · `pnpm check` (lint + typecheck + test) · `pnpm build` · `pnpm trigger:dev`
+- تطبيق السكيمة: `npx @insforge/cli db migrations up --all` (بعد `link`)
 
 ## مصادر التحقق (2026-10-09)
 
@@ -114,3 +124,13 @@
 - [Steel pricing & limits](https://docs.steel.dev/overview/pricinglimits) · [Steel session lifecycle](https://docs.steel.dev/overview/sessions-api/session-lifecycle) · [Steel live sessions](https://docs.steel.dev/overview/guides/view-and-embed-live-sessions)
 - [Browserbase pricing](https://www.browserbase.com/pricing) (للمقارنة: المجاني بدون حل كابتشا ولا stealth؛ يبدآن من Developer بـ$20/شهر)
 - بقية المزودين: تقرير المقارنة الأصلي (2026-09-29) الي بنى عليه أحمد هذا الستاك.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

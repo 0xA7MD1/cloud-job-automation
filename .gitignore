@@ -1,5 +1,30 @@
+# dependencies
 node_modules/
+.pnp
+.pnp.*
+
+# next.js / vercel
 .next/
+out/
+build/
 .vercel/
+next-env.d.ts
+*.tsbuildinfo
+
+# trigger.dev
+.trigger/
+
+# env — الأسرار ما تنرفع أبدًا. .env.example فيه الأسماء بس
 .env
 .env*.local
+.env.production
+.env.development
+
+# testing
+coverage/
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+.pnpm-debug.log*
