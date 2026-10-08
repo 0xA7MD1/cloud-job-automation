@@ -6,13 +6,17 @@ import { cn } from "@/lib/utils";
 
 const LINKS = [
   { href: "/dashboard", label: "الرئيسية" },
+  { href: "/chat", label: "الشات" },
+  { href: "/jobs", label: "الوظائف" },
   { href: "/files", label: "ملفاتي" },
+  { href: "/profile", label: "ملفي" },
+  { href: "/settings/keys", label: "المفاتيح" },
 ] as const;
 
 export function NavLinks() {
   const pathname = usePathname();
   return (
-    <nav className="flex items-center gap-4 text-sm">
+    <nav className="-mx-1 flex items-center gap-1 overflow-x-auto text-sm">
       {LINKS.map(({ href, label }) => {
         const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
@@ -21,8 +25,8 @@ export function NavLinks() {
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "text-muted-foreground transition-colors hover:text-foreground",
-              active && "font-medium text-foreground",
+              "shrink-0 rounded-md px-2 py-1 text-muted-foreground transition-colors hover:text-foreground",
+              active && "bg-muted font-medium text-foreground",
             )}
           >
             {label}

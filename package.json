@@ -14,8 +14,15 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.78",
+    "@ai-sdk/google": "^4.0.93",
+    "@ai-sdk/groq": "^4.0.59",
+    "@ai-sdk/openai": "^4.0.91",
+    "@ai-sdk/react": "^4.0.138",
     "@insforge/sdk": "^1.5.2",
+    "@openrouter/ai-sdk-provider": "^3.1.0",
     "@trigger.dev/sdk": "^4.7.3",
+    "ai": "^7.0.135",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
     "lucide-react": "^1.53.0",
@@ -33,7 +40,7 @@
   "devDependencies": {
     "@electric-sql/pglite": "~0.3.16",
     "@tailwindcss/turbopack": "^4",
-    "@types/node": "^20",
+    "@types/node": "^24.19.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
