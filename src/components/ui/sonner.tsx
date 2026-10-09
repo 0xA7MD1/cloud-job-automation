@@ -39,6 +39,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast: "cn-toast",
+          // أحادي اللون: الأحمر لأيقونة الخطأ بس
+          error: "[&_[data-icon]]:text-destructive",
         },
       }}
       {...props}
