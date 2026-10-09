@@ -139,3 +139,24 @@ export async function removeGeneratedFile(userId: string, fileId: string | null)
   await admin.storage.from(file.bucket).remove(file.object_key);
   await admin.database.from("files").delete().eq("id", file.id).eq("user_id", userId);
 }
+
+/**
+ * يسجّل محاولة الإرسال قبل الضغط (قاعدة 7) مرة وحدة بس. false = انسجّلت قبل،
+ * فما نرسل مرة ثانية. الحدث submit_attempted هو الي تنحسب منه الحصة الشهرية.
+ */
+export async function markSubmitAttempted(
+  app: Pick<Application, "id" | "user_id">,
+  data: Record<string, unknown>,
+): Promise<boolean> {
+  const admin = getInsForgeAdminClient();
+  const { data: rows, error } = await admin.database
+    .from("applications")
+    .update({ submit_attempted_at: new Date().toISOString() })
+    .eq("id", app.id)
+    .eq("user_id", app.user_id)
+    .is("submit_attempted_at", null)
+    .select("id");
+  if (error || !rows || (rows as unknown[]).length === 0) return false;
+  await updateApplication(app, {}, { type: "submit_attempted", data });
+  return true;
+}

@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { missingRequired, readForm, readStoredAnswers } from "@/lib/apply/form";
 import { ACTIVE_STATUSES, STATUS_LABELS, STATUS_TONE } from "@/lib/apply/labels";
-import { isOwnerAccount } from "@/lib/apply/service";
+import { browserProviderFor, monthlyUsage } from "@/lib/apply/service";
 import { requireUser } from "@/lib/auth";
 import type { Application, Company, FileRow, Job } from "@/lib/db/types";
 import { formatDateTime } from "@/lib/format";
@@ -19,6 +19,7 @@ import { createRunReadToken } from "@/lib/trigger/server";
 import { AnswersForm } from "../_components/answers-form";
 import { CoverLetterEditor, CvPicker, DownloadButton, OutreachDrafts, ReprepareButton } from "../_components/application-parts";
 import { RunWatcher } from "../_components/run-watcher";
+import { SubmitPanel } from "../_components/submit-panel";
 
 export const metadata: Metadata = { title: "مراجعة الطلب" };
 
@@ -61,7 +62,7 @@ async function ApplicationView({ params }: { params: Promise<{ id: string }> }) 
   const fileIds = [app.cover_letter_file_id, app.cover_letter_docx_file_id, app.evidence_file_id].filter(
     (v): v is string => !!v,
   );
-  const [{ data: cvFiles }, { data: docs }, owner] = await Promise.all([
+  const [{ data: cvFiles }, { data: docs }, browser, quota] = await Promise.all([
     insforge.database
       .from("files")
       .select("id, file_name")
@@ -71,8 +72,10 @@ async function ApplicationView({ params }: { params: Promise<{ id: string }> }) 
     fileIds.length
       ? insforge.database.from("files").select("id, file_name, kind").in("id", fileIds)
       : Promise.resolve({ data: [] }),
-    isOwnerAccount(insforge, user.id),
+    browserProviderFor(insforge, user.id),
+    monthlyUsage(insforge),
   ]);
+  const owner = browser.owner;
   const docName = new Map(((docs ?? []) as Pick<FileRow, "id" | "file_name">[]).map((f) => [f.id, f.file_name]));
 
   const active = ACTIVE_STATUSES.includes(app.status);
@@ -148,6 +151,35 @@ async function ApplicationView({ params }: { params: Promise<{ id: string }> }) 
             {editable && <ReprepareButton applicationId={app.id} />}
           </CardContent>
         </Card>
+      )}
+
+      <SubmitPanel
+        applicationId={app.id}
+        canSubmit={!!form && editable && app.status !== "draft"}
+        canCancel={active}
+        provider={browser.provider}
+        providerError={"error" in browser ? browser.error : null}
+        missing={missing.length}
+        quota={quota ? { used: quota.used, limit: quota.apply_limit } : null}
+      />
+
+      {app.status === "needs_user" && app.browser_provider === "local" && (
+        <Alert>
+          <AlertCircleIcon aria-hidden />
+          <AlertTitle>ينتظرك في نافذة Chrome على جهازك</AlertTitle>
+          <AlertDescription>كمّل الخطوة المطلوبة في النافذة نفسها، والمهمة تكمل لحالها لما تظهر صفحة التأكيد.</AlertDescription>
+        </Alert>
+      )}
+
+      {app.status === "submitted" && (
+        <Alert>
+          <AlertCircleIcon aria-hidden />
+          <AlertTitle>انرسل الطلب{app.submitted_at ? ` · ${formatDateTime(app.submitted_at)}` : ""}</AlertTitle>
+          <AlertDescription className="flex flex-wrap items-center gap-2">
+            {app.confirmation_ref ? `رقم الطلب: ${app.confirmation_ref}` : "الدليل محفوظ في ملفاتك."}
+            {app.evidence_file_id && <DownloadButton fileId={app.evidence_file_id} label="صورة التأكيد" />}
+          </AlertDescription>
+        </Alert>
       )}
 
       <section className="flex flex-col gap-3">

@@ -1,6 +1,7 @@
 import "server-only";
 import { auth, runs, tasks } from "@trigger.dev/sdk";
 import type { prepareApplicationTask, renderCoverLetterTask } from "../../../trigger/applications";
+import type { submitApplicationTask } from "../../../trigger/submit";
 import { readEnv } from "@/lib/env";
 
 // تشغيل مهام Trigger.dev من التطبيق.
@@ -55,6 +56,17 @@ export function triggerRenderCoverLetter(isOwner: boolean, applicationId: string
       "render-cover-letter",
       { applicationId },
       { concurrencyKey: applicationId, tags: [`application_${applicationId}`] },
+    ),
+  );
+}
+
+/** الإرسال مرة وحدة لكل محاولة يطلبها المستخدم (idempotencyKey) وبدون إعادة تلقائية (القاعدة 7) */
+export function triggerSubmit(isOwner: boolean, applicationId: string, attempt: string): Promise<RunHandle> {
+  return withRunAuth(isOwner, () =>
+    tasks.trigger<typeof submitApplicationTask>(
+      "submit-application",
+      { applicationId },
+      { idempotencyKey: `submit-${applicationId}-${attempt}`, tags: [`application_${applicationId}`] },
     ),
   );
 }

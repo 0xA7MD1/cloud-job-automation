@@ -1,9 +1,10 @@
 import "server-only";
-import type { Application, ApplicationStatus, Job } from "@/lib/db/types";
+import type { Application, ApplicationStatus, Job, MonthlyApplyUsage } from "@/lib/db/types";
 import { getInsForgeAdminClient } from "@/lib/insforge/admin";
 import type { SessionClient } from "@/lib/chat/tools";
 import { isSupportedAts } from "@/lib/jobs/ats";
-import { TriggerNotConfiguredError, triggerPrepare } from "@/lib/trigger/server";
+import { TriggerNotConfiguredError, cancelRun, runEnvironment, triggerPrepare, triggerSubmit } from "@/lib/trigger/server";
+import { readForm } from "./form";
 
 // بدء الطلب وتجهيزه. تستخدمه صفحة الوظائف وأداة الشات (prepareApplication).
 // المستخدم ينشئ صف الطلب بجلسته (RLS)، وتغيير الحالة بعميل الأدمن مع فلتر user_id.
@@ -113,4 +114,122 @@ export async function reprepareApplication(
   if (app.submit_attempted_at) return { ok: false, error: "انضغط «إرسال» في هذا الطلب: ما نعيد تجهيزه." };
   if (!PREPARABLE.includes(app.status)) return { ok: false, error: "الطلب شغّال الحين." };
   return queuePrepare(insforge, app);
+}
+
+/** وين يشتغل متصفح هذا المستخدم: جهاز المالك (محلي) أو Steel بمفتاحه */
+export async function browserProviderFor(
+  insforge: SessionClient,
+  userId: string,
+): Promise<{ provider: "local" | "steel"; owner: boolean } | { provider: null; owner: boolean; error: string }> {
+  const owner = await isOwnerAccount(insforge, userId);
+  if (owner && runEnvironment(true) === "owner-dev") return { provider: "local", owner };
+  const { data } = await insforge.database
+    .from("provider_keys")
+    .select("status")
+    .eq("user_id", userId)
+    .eq("provider", "steel")
+    .maybeSingle();
+  const status = (data as { status?: string } | null)?.status;
+  if (!status || status === "invalid") {
+    return { provider: null, owner, error: "أضف مفتاح Steel من «المفاتيح» عشان نفتح متصفح ونقدّم عنك." };
+  }
+  return { provider: "steel", owner };
+}
+
+export async function monthlyUsage(insforge: SessionClient): Promise<MonthlyApplyUsage | null> {
+  const { data } = await insforge.database.rpc("monthly_apply_usage");
+  return ((Array.isArray(data) ? data[0] : data) as MonthlyApplyUsage | undefined) ?? null;
+}
+
+/**
+ * «قدّم الحين» من صفحة المراجعة بعد تأكيد المستخدم. يتحقق من الحصة والملفات
+ * والمزود، ثم يحط الطلب بالطابور ويشغّل مهمة الإرسال.
+ */
+export async function submitApplication(
+  insforge: SessionClient,
+  userId: string,
+  applicationId: string,
+): Promise<ServiceResult<{ id: string }>> {
+  const { data } = await insforge.database
+    .from("applications")
+    .select("id, user_id, status, form, cv_file_id, submit_attempted_at")
+    .eq("id", applicationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  const app = data as Pick<Application, "id" | "user_id" | "status" | "form" | "cv_file_id" | "submit_attempted_at"> | null;
+  if (!app) return { ok: false, error: "الطلب مو موجود." };
+  if (app.submit_attempted_at) return { ok: false, error: "انضغط «إرسال» في هذا الطلب قبل: ما نعيد الإرسال." };
+  if (!["ready", "failed", "cancelled"].includes(app.status)) return { ok: false, error: "الطلب مو جاهز للإرسال." };
+  if (!readForm(app.form)) return { ok: false, error: "جهّز الطلب أول." };
+  if (!app.cv_file_id) return { ok: false, error: "اختر سيرة ذاتية للطلب." };
+
+  const usage = await monthlyUsage(insforge);
+  if (usage && usage.used >= usage.apply_limit) {
+    return { ok: false, error: `وصلت حد هذا الشهر (${usage.apply_limit} تقديم). يتجدد أول الشهر.` };
+  }
+  const browser = await browserProviderFor(insforge, userId);
+  if (!browser.provider) return { ok: false, error: browser.error };
+
+  const admin = getInsForgeAdminClient();
+  const { data: moved } = await admin.database
+    .from("applications")
+    .update({ status: "queued", browser_provider: browser.provider, error: null, status_detail: null })
+    .eq("id", app.id)
+    .eq("user_id", userId)
+    .in("status", ["ready", "failed", "cancelled"])
+    .is("submit_attempted_at", null)
+    .select("id");
+  if (!moved || (moved as unknown[]).length === 0) return { ok: false, error: "الطلب تغيّر: حدّث الصفحة." };
+  await admin.database
+    .from("application_events")
+    .insert({ application_id: app.id, user_id: userId, type: "queued", data: { provider: browser.provider } });
+
+  try {
+    const run = await triggerSubmit(browser.owner, app.id, crypto.randomUUID());
+    await admin.database.from("applications").update({ trigger_run_id: run.id }).eq("id", app.id).eq("user_id", userId);
+    return { ok: true, data: { id: app.id } };
+  } catch (error) {
+    await admin.database
+      .from("applications")
+      .update({ status: "ready", error: triggerErrorMessage(error) })
+      .eq("id", app.id)
+      .eq("user_id", userId);
+    return { ok: false, error: triggerErrorMessage(error) };
+  }
+}
+
+/** يلغي طلب بالطابور أو شغّال. لو انضغط «إرسال» قبل الإلغاء ننبّه إن ممكن انرسل. */
+export async function cancelApplication(
+  insforge: SessionClient,
+  userId: string,
+  applicationId: string,
+): Promise<ServiceResult<undefined>> {
+  const { data } = await insforge.database
+    .from("applications")
+    .select("id, status, trigger_run_id, submit_attempted_at")
+    .eq("id", applicationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  const app = data as Pick<Application, "id" | "status" | "trigger_run_id" | "submit_attempted_at"> | null;
+  if (!app) return { ok: false, error: "الطلب مو موجود." };
+  if (!["preparing", "queued", "running", "needs_user"].includes(app.status)) return { ok: false, error: "ما فيه شي شغّال نلغيه." };
+
+  if (app.trigger_run_id) {
+    try {
+      await cancelRun(await isOwnerAccount(insforge, userId), app.trigger_run_id);
+    } catch {
+      // التشغيل خلص أو مو موجود: نكمل ونحدّث الحالة
+    }
+  }
+  const admin = getInsForgeAdminClient();
+  await admin.database
+    .from("applications")
+    .update({
+      status: "cancelled",
+      status_detail: app.submit_attempted_at ? "انلغى بعد محاولة الإرسال: ممكن الطلب انرسل، شيك بريدك." : null,
+    })
+    .eq("id", app.id)
+    .eq("user_id", userId);
+  await admin.database.from("application_events").insert({ application_id: app.id, user_id: userId, type: "cancelled" });
+  return { ok: true, data: undefined };
 }

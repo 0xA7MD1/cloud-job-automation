@@ -2,7 +2,14 @@
 
 import { z } from "zod";
 import { readForm, readStoredAnswers, answerValueSchema, type StoredAnswers } from "@/lib/apply/form";
-import { isOwnerAccount, reprepareApplication, startApplication, triggerErrorMessage } from "@/lib/apply/service";
+import {
+  cancelApplication,
+  isOwnerAccount,
+  reprepareApplication,
+  startApplication,
+  submitApplication,
+  triggerErrorMessage,
+} from "@/lib/apply/service";
 import { requireUser } from "@/lib/auth";
 import type { Application } from "@/lib/db/types";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
@@ -114,4 +121,19 @@ export async function selectCvAction(applicationId: string, fileId: string): Pro
   const { error } = await found.insforge.database.from("applications").update({ cv_file_id: fid.data }).eq("id", found.app.id);
   if (error) return { ok: false, error: "ما قدرنا نغيّر السيرة." };
   return { ok: true, data: undefined };
+}
+
+/** «قدّم الحين» بعد تأكيد المستخدم (النموذج ما عنده أداة إرسال: قاعدة 8) */
+export async function submitApplicationAction(applicationId: string): Promise<AppActionResult<{ id: string }>> {
+  const id = z.uuid().safeParse(applicationId);
+  if (!id.success) return { ok: false, error: "طلب غير صالح." };
+  const user = await requireUser();
+  return submitApplication(await createInsForgeServerClient(), user.id, id.data);
+}
+
+export async function cancelApplicationAction(applicationId: string): Promise<AppActionResult> {
+  const id = z.uuid().safeParse(applicationId);
+  if (!id.success) return { ok: false, error: "طلب غير صالح." };
+  const user = await requireUser();
+  return cancelApplication(await createInsForgeServerClient(), user.id, id.data);
 }
