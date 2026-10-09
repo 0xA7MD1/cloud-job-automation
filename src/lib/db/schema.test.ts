@@ -1,6 +1,6 @@
 // يطبّق migrations على Postgres محلي (PGlite) فوق بديل مصغّر لسكيمات InsForge
 // (auth.uid/auth.jwt، storage.objects، الأدوار)، ويختبر RLS والصلاحيات.
-// البديل يقلّد InsForge كما في مستودعهم (migrations 036 و045)، مو نسخة منه:
+// البديل يقلّد InsForge كما في مستودعهم (migrations 036 و045 و047)، مو نسخة منه:
 // النجاح هنا ما يغني عن تجربة على المشروع الحقيقي.
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
@@ -52,13 +52,13 @@ beforeAll(async () => {
     );
     create function storage.foldername(name text) returns text[] language sql immutable as $$
       select (regexp_split_to_array(name, '/'))[1 : array_upper(regexp_split_to_array(name, '/'), 1) - 1] $$;
-    alter table storage.objects enable row level security;
     grant usage on schema storage to authenticated;
     grant select, insert, update, delete on storage.objects to authenticated;
     insert into auth.users values ('${A}', 'a@x.test'), ('${B}', 'b@x.test');
   `);
 
-  const dir = path.dirname(fileURLToPath(import.meta.url));
+  // الملف هنا مو في migrations/ لأن `db migrations up --all` يرفض أي ملف مو .sql هناك
+  const dir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../migrations");
   for (const file of readdirSync(dir).filter((f) => f.endsWith(".sql")).sort()) {
     await db.exec(readFileSync(path.join(dir, file), "utf8"));
   }

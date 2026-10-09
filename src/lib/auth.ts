@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
 
 export interface CurrentUser {
@@ -16,6 +17,9 @@ export interface CurrentUser {
  * يقرأ الكوكيز ⇒ استدعه داخل <Suspense>.
  */
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
+  // الـSDK يقارن انتهاء التوكن بـDate.now(). مع partialPrefetching الكوكيز تتوفر وقت
+  // الـprerender، فبدون connection() يطلع خطأ blocking-prerender-current-time في كل صفحة.
+  await connection();
   const insforge = await createInsForgeServerClient();
   const { data, error } = await insforge.auth.getCurrentUser();
   if (error || !data.user) return null;

@@ -28,3 +28,6 @@ coverage/
 *.pem
 npm-debug.log*
 .pnpm-debug.log*
+
+# insforge CLI — project.json holds the admin key
+.insforge/

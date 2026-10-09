@@ -9,7 +9,7 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "trigger:dev": "trigger dev",
+    "trigger:dev": "trigger dev start --skip-rules-install",
     "trigger:deploy": "trigger deploy",
     "check": "pnpm lint && pnpm typecheck && pnpm test"
   },
@@ -23,7 +23,7 @@
     "@openrouter/ai-sdk-provider": "^3.1.0",
     "@react-pdf/renderer": "^4.9.0",
     "@trigger.dev/react-hooks": "4.7.3",
-    "@trigger.dev/sdk": "^4.7.3",
+    "@trigger.dev/sdk": "4.7.3",
     "ai": "^7.0.135",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",

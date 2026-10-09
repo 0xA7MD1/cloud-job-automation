@@ -1,111 +1,32 @@
 # stack — Job-apply bot
 
-**Status:** all 9 build steps are done and committed.
-**Missing:** your accounts and keys. Nothing has run against real services yet.
+**Status:** runs locally. InsForge + Trigger.dev connected. Your account (`mrsftls@gmail.com`) is **owner** → applications use Chrome on your PC, free.
 
 ---
 
-## Waiting on Ahmed (do in this order)
+## Waiting on Ahmed
 
-### 1. Accounts  `[blocker]`
-- [ ] Create an **InsForge** project. Copy the 3 values into `.env.local`:
-  - `NEXT_PUBLIC_INSFORGE_URL`
-  - `NEXT_PUBLIC_INSFORGE_ANON_KEY`
-  - `INSFORGE_API_KEY`
-- [ ] Create a **Trigger.dev** project. Copy into `.env.local`:
-  - `TRIGGER_PROJECT_REF` (starts with `proj_`)
-  - `TRIGGER_SECRET_KEY` (use the **dev** key, starts with `tr_dev_`)
-- [ ] Start from `.env.example`:
+### 1. First real test
+Keep both running: the app (`pnpm dev`) and the worker tab (`pnpm trigger:dev`). Open `http://localhost:3000`:
+1. `/files` → upload your CV.
+2. `/profile` → pick it as default CV + fill details, answer bank, target roles.
+3. `/settings/keys` → add a free Groq key + a free Tavily key.
+4. `/chat` → type `fintech companies in Riyadh` → open one company's official jobs.
+5. `/jobs` → press prepare on one job.
+6. `/applications` → open it → review answers + cover letter (PDF / Word).
+7. Pick a job you really want → submit → confirm → watch the Chrome window.
+8. If it stops (captcha / email code / missing field): finish it in that window. It continues by itself.
 
-```bash
-cp .env.example .env.local
-```
+### 2. Microsoft sign-in (optional — Google already works)
+- [ ] InsForge dashboard → Authentication → Microsoft → paste an Azure app client ID + secret.
 
-### 2. Encryption key
-- [ ] Run this, paste the output into `.env.local` as `BYOK_MASTER_KEY`.
-- (Never paste it in chat. If lost, all saved user keys become unreadable.)
-
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
-```
-
-### 3. Database + storage
-- [ ] Log in and link this folder:
-
-```bash
-npx @insforge/cli login
-```
-
-```bash
-npx @insforge/cli link --project-id <project-id>
-```
-
-- [ ] Apply the schema (4 files in `migrations/`):
-
-```bash
-npx @insforge/cli db migrations up --all
-```
-
-- [ ] Create the private file bucket:
-
-```bash
-npx @insforge/cli storage create-bucket user-files --private
-```
-
-### 4. Sign-in providers (InsForge dashboard → Authentication)
-- [ ] Turn on **Google** and **Microsoft**.
-- [ ] Add these 3 redirect URLs:
-  - `http://localhost:3000/api/auth/callback`
-  - `http://localhost:3000/sign-in`
-  - `http://localhost:3000/reset-password`
-
-### 5. Run it on your PC (2 terminals)
-- [ ] Trigger.dev login (once):
-
-```bash
-npx trigger.dev@latest login
-```
-
-- [ ] Terminal 1:
-
-```bash
-pnpm dev
-```
-
-- [ ] Terminal 2 (keep it running: your applications run here, free):
-
-```bash
-pnpm trigger:dev
-```
-
-### 6. Make your account the owner (once, after you sign up in the app)
-- [ ] Replace `<your-email>` and run:
-
-```bash
-npx @insforge/cli db query "insert into public.entitlements (user_id, plan, monthly_apply_limit) select id, 'owner', 500 from auth.users where email = '<your-email>' on conflict (user_id) do update set plan = 'owner'"
-```
-
-- (Owner = your applications use Chrome on your PC. Free, no Steel.)
-
-### 7. First test (open `http://localhost:3000`, pages in order)
-1. `/sign-up` → create your account.
-2. `/files` → upload your CV.
-3. `/profile` → choose it as default CV + fill details, answer bank, target roles.
-4. `/settings/keys` → add a free Groq key + a free Tavily key.
-5. `/chat` → type `fintech companies in Riyadh` → open one company's official jobs.
-6. `/jobs` → press the prepare button on one job.
-7. `/applications` → open it → review answers + cover letter (PDF / Word).
-8. Pick a job you really want → press submit → confirm → watch the Chrome window.
-9. If it stops (captcha / email code / missing field): finish it in that window. It continues by itself.
-
-### 8. Go online (later, when you want it on the internet)
-- [ ] Tell the agent your InsForge region (it writes `vercel.json` with the same region).
+### 3. Go online (later)
 - [ ] Vercel → Environment Variables:
   - `NEXT_PUBLIC_APP_URL` (your Vercel URL)
-  - `NEXT_PUBLIC_INSFORGE_URL`, `NEXT_PUBLIC_INSFORGE_ANON_KEY`, `INSFORGE_API_KEY`
-  - `BYOK_MASTER_KEY` (same value as local)
+  - `NEXT_PUBLIC_INSFORGE_URL`, `NEXT_PUBLIC_INSFORGE_ANON_KEY`, `INSFORGE_API_KEY` (same as `.env.local`)
+  - `BYOK_MASTER_KEY` (same as `.env.local`)
   - `TRIGGER_SECRET_KEY` (the **prod** key `tr_prod_...`)
-  - `TRIGGER_OWNER_SECRET_KEY` (the **dev** key `tr_dev_...` → your applications still run on your PC)
+  - `TRIGGER_OWNER_SECRET_KEY` (the **dev** key `tr_dev_...`)
 - [ ] Trigger.dev dashboard → Production env vars: `NEXT_PUBLIC_INSFORGE_URL`, `INSFORGE_API_KEY`, `BYOK_MASTER_KEY`
 - [ ] Deploy the background tasks:
 
@@ -113,18 +34,19 @@ npx @insforge/cli db query "insert into public.entitlements (user_id, plan, mont
 pnpm trigger:deploy
 ```
 
-- [ ] InsForge redirect URLs: add the same 3 paths with your Vercel domain.
+- [ ] Tell the agent your Vercel domain → it adds the 3 redirect URLs to `insforge.toml` and applies them.
 
 ---
 
 ## Open decision
 - [ ] **Backup browser** (for sites that block Steel): Browser Use or Browserbase?
   - **Recommendation: Browser Use** (Browserbase needs $20/month per user for captcha + stealth).
-  - Not urgent. Nothing is blocked by it.
+  - Not urgent.
 
 ## Closed decisions
+- [x] InsForge setup, schema, bucket, redirect URLs, `.env.local` → done by agent (2026-10-09)
+- [x] Trigger.dev MCP install prompt → skipped (install later: `npx trigger.dev@latest install-mcp`) (2026-10-09)
 - [x] Free 500/month for owner → local Chrome via `pnpm trigger:dev` (2026-10-09)
-- [x] Build steps 4–6, then 7–9 → done (2026-10-09)
 - [x] Services split only when worth it: InsForge (DB/auth/files) + Trigger.dev (background) (2026-10-09)
 - [x] Files in InsForge Storage, not R2 (2026-10-09)
 - [x] Cloud browser for users: Steel (2026-10-09)
@@ -133,17 +55,21 @@ pnpm trigger:deploy
 ---
 
 ## Notes for the next agent
-- **Done:** steps 1–9 (commits `df5a74a` … `a2041e5`). 100 tests + `pnpm build` pass.
-- **Verified live (no real submit):** form filling on real Greenhouse (Discord), Lever (Palantir), Ashby (Notion) with fake data, `skipFiles: true`, submit never clicked. Arabic PDF shaping/RTL checked visually.
-- **Not verified:** anything needing InsForge / Trigger.dev / Steel / AI keys; a real submission.
-- **Next:** help Ahmed through the list above, then fix what the first real run shows.
+- **Done:** steps 1–9 + live setup. InsForge project `cloud job automation` (`eu-central-1`), linked via `.insforge/project.json` (gitignored). 4 migrations applied, bucket `user-files` (private), redirect URLs for localhost. Trigger.dev project `intlaq` (`proj_jekceuvuczxgxkpwgqya`), worker `20261009.1` registered. `pnpm check` passes (100 tests).
+- **Verified live:** Google sign-in → dashboard and all app pages render (Ahmed's own session). Admin key reads tables; anon key is refused.
+- **Not verified:** chat/search with real AI keys, prepare, a real submission.
+- **Another session** is adding `scripts/seed-demo.mjs` (+ `seed:demo` scripts in `package.json`): fake data in the same InsForge project. Not part of this task's commits.
 - **Traps:**
-  - Next 16 `cacheComponents`: `cookies()` / `params` / `searchParams` / `usePathname()` only inside `<Suspense>`. Run `pnpm build` after any new page.
+  - Fresh InsForge projects ship `storage.objects` with RLS **off** and full grants to `authenticated`. Storage migration enables it; never drop that line.
+  - `migrations/` must hold only `.sql` files, or `db migrations up --all` refuses to run. Schema test lives in `src/lib/db/schema.test.ts`.
+  - InsForge SDK calls `Date.now()` in `auth.getCurrentUser()` → `getCurrentUser` awaits `connection()` first (`partialPrefetching` is on). Same fix for any new session read outside it.
+  - `trigger dev --skip-mcp-install` is broken in 4.7.3 (reads `skipMCPInstall`, parser gives `skipMcpInstall`). The prompt is already marked seen on this PC.
+  - ESLint ignores `.trigger/**` (worker bundles).
+  - Next 16 `cacheComponents`: `cookies()` / `params` / `searchParams` / `usePathname()` only inside `<Suspense>`. Run `pnpm build` after any new page (stop `pnpm dev` first).
   - Greenhouse hydrates late and wipes typed values → adapters call `settle()` and re-check every field.
   - Never retry a submit. `submit_attempted_at` is set atomically before the click (quota counts it).
-  - Steel live URL: only via `/api/applications/[id]/live`, never stored or logged. Session id = `liveSessionId(appId, runId)`.
+  - Steel live URL: only via `/api/applications/[id]/live`, never stored or logged.
   - Ashby questions come from an undocumented GraphQL → falls back to basic fields if it changes.
-  - `trigger.config.ts`: `playwright-core` and `@react-pdf/renderer` are external; fonts copied by `additionalFiles`.
   - Every `fetch` has a timeout; unread bodies → `discardBody()`.
   - Do not run `python` on this machine (Windows Store stub hangs).
   - Adapter changes: test on a real form with fake data, `skipFiles: true`, no `submit()`.

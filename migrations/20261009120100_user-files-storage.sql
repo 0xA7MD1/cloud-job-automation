@@ -1,10 +1,13 @@
 -- سياسات bucket "user-files" (خاص). أنشئ الـbucket قبلها أو بعدها:
 --   npx @insforge/cli storage create-bucket user-files --private
 --
--- InsForge يرفض كل شي على storage.objects افتراضيًا في المشاريع الجديدة.
+-- المشاريع الجديدة في InsForge يجي فيها RLS مطفي على storage.objects، و authenticated
+-- عنده select/insert/update/delete عليه ⇒ بدون السطر الي تحت أي مستخدم يقرأ ويحذف ملفات الكل.
 -- القاعدة: أول جزء من المسار = معرّف المستخدم (من JWT)، فكل واحد يشوف مجلده بس.
 -- القراءة والحذف بالمجلد بس، لأن الخادم (مهام Trigger.dev) يكتب للمستخدم
 -- مستندات وأدلة تقديم في مجلده، وهذي uploaded_by فيها مو المستخدم.
+
+alter table storage.objects enable row level security;
 
 create policy user_files_owner_select on storage.objects for select to authenticated
   using (

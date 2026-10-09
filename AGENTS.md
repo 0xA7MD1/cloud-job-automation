@@ -115,12 +115,14 @@
 
 ## الهيكل والأوامر
 
-- `src/app/` الواجهة ومسارات API · `src/lib/` المنطق المشترك · `trigger/` مهام Trigger.dev · `migrations/` سكيمة InsForge (`<14 رقم>_<اسم>.sql`)
+- `src/app/` الواجهة ومسارات API · `src/lib/` المنطق المشترك · `trigger/` مهام Trigger.dev · `migrations/` سكيمة InsForge (`<14 رقم>_<اسم>.sql`، وملفات `.sql` بس: أي ملف ثاني يوقف `up --all`)
 - التقديم: `src/lib/apply/` (الأسئلة، الإجابات، الخطاب، `submit.ts`، ومحوّلات `adapters/` لكل نظام توظيف) · المتصفح: `src/lib/browser/` (Steel + محلي) · الخط العربي للـPDF: `assets/fonts/`
 - أي تعديل على محوّل: جرّبه على نموذج حقيقي ببيانات وهمية و`skipFiles: true` وبدون `submit()`. ممنوع ترسل طلب حقيقي في التجربة
-- أي تعديل على السكيمة: ملف migration جديد (لا تعدّل ملف انطبق)، وحدّث `src/lib/db/types.ts`، وأضف حالته في `migrations/schema.test.ts`
+- أي تعديل على السكيمة: ملف migration جديد (لا تعدّل ملف انطبق)، وحدّث `src/lib/db/types.ts`، وأضف حالته في `src/lib/db/schema.test.ts`
 - `pnpm dev` · `pnpm check` (lint + typecheck + test) · `pnpm build` · `pnpm trigger:dev`
-- تطبيق السكيمة: `npx @insforge/cli db migrations up --all` (بعد `link`)
+- تطبيق السكيمة: `npx -y @insforge/cli db migrations up --all` (المجلد مربوط بمشروع InsForge؛ الإعداد في `.insforge/project.json` وما ينرفع)
+- إعدادات InsForge (روابط الرجوع، سياسة كلمة المرور، حجم الرفع) في `insforge.toml`: عدّلها ثم `npx -y @insforge/cli config plan` و`config apply`
+- منطقة InsForge = AWS `eu-central-1` ⇒ `vercel.json` على `fra1`
 
 ## مصادر التحقق (2026-10-09)
 
@@ -140,3 +142,24 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+<!-- INSFORGE:START -->
+## InsForge backend
+
+This project uses [InsForge](https://insforge.dev): an all-in-one, open-source Postgres-based backend (BaaS) that gives this app a database, authentication, file storage, edge functions, realtime, an AI model gateway, and payments through one platform.
+
+- **Project:** **cloud job automation** (API base `https://na9kn9su.eu-central.insforge.app`)
+- **Skills:** these InsForge skills are installed for supported coding agents. Reach for them before implementing any InsForge feature instead of guessing the API:
+  - `insforge`: app code with the `@insforge/sdk` client (database CRUD, auth, storage, edge functions, realtime, AI, email, and Stripe payments).
+  - `insforge-cli`: backend and infrastructure via the `insforge` CLI (projects, SQL, migrations, RLS policies, storage buckets, functions, secrets, payment setup, schedules, deploys).
+  - `insforge-debug`: diagnosing failures (SDK/HTTP errors, RLS denials, auth and OAuth issues) and running security or performance audits.
+  - `insforge-integrations`: wiring external auth providers (Clerk, Auth0, WorkOS, Better Auth, etc.) for JWT-based RLS, or the OKX x402 payment facilitator.
+  - `find-skills`: discovering additional skills on demand.
+- **Credentials:** app code reads keys from `.env.local`; the CLI reads `.insforge/project.json`. Never hardcode or commit keys.
+
+Key patterns:
+
+- Database inserts take an array: `insert([{ ... }])`.
+- Reference users with `auth.users(id)`; use `auth.uid()` in RLS policies.
+- For storage uploads, persist both the returned `url` and `key`.
+<!-- INSFORGE:END -->
