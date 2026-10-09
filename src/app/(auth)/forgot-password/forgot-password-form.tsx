@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Button, CtaIcon } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { requestPasswordResetAction, type AuthFormState } from "../actions";
@@ -35,8 +35,9 @@ export function ForgotPasswordForm() {
           <Input id="email" name="email" type="email" autoComplete="email" dir="ltr" required />
           <FieldError>{state.error}</FieldError>
         </Field>
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" variant="cta" size="lg" className="w-full justify-between ps-5" disabled={pending}>
           {pending ? "جاري الإرسال…" : "أرسل رابط التغيير"}
+          <CtaIcon />
         </Button>
         <Link href="/sign-in" className="text-center text-sm text-muted-foreground hover:underline">
           رجوع لتسجيل الدخول

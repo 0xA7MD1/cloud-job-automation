@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Button, CtaIcon } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { resendVerificationAction, verifyEmailAction, type AuthFormState } from "../actions";
@@ -36,8 +36,9 @@ export function VerifyEmailForm({ email, next }: { email: string; next: string }
           <FieldError>{state.error}</FieldError>
           <FieldDescription>الرمز صالح لفترة قصيرة.</FieldDescription>
         </Field>
-        <Button type="submit" disabled={verifying}>
+        <Button type="submit" variant="cta" size="lg" className="w-full justify-between ps-5" disabled={verifying}>
           {verifying ? "جاري التأكيد…" : "تأكيد البريد"}
+          <CtaIcon />
         </Button>
         <Button type="submit" variant="ghost" formAction={resend} formNoValidate disabled={resending}>
           {resending ? "جاري الإرسال…" : "أرسل رمز جديد"}

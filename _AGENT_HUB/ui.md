@@ -9,7 +9,9 @@
 2. Installed: shadcn `sidebar sheet tooltip accordion` (+ `src/hooks/use-mobile.ts`), Magic UI `dot-pattern marquee border-beam blur-fade animated-shiny-text animated-theme-toggler progressive-blur shine-border`. New dep: `motion`.
 3. Phase 2 (2026-10-10): landing in `src/app/(marketing)/` (header, hero + product mock, works with, how it works, `#watch` demo, features bento, security, FAQ, final CTA, footer). `/` static (`○`, footer year via `"use cache"` + `cacheLife("days")`). No overflow at 360/390.
 
-**Remaining:** phases 3 → 4. After each: `pnpm check`, `pnpm build`, screenshots, update this section.
+4. Phase 3 (2026-10-10): `(app)` shell = shadcn sidebar (`side="right" dir="rtl" variant="inset"`, mobile sheet via `MobileBar`), Suspense split kept. `(auth)` = card on a stage, full-width `cta` submit, `glass` OAuth. Pages: `PageHeader` / `EmptyState` / `SegmentedNav` (`src/components/`), `Card` base now `rounded-2xl bg-card/50 ring-hairline`. Presentation only.
+
+**Remaining:** phase 4 (final verify + report).
 
 **Need to know:**
 1. `package.json` has another session's uncommitted `seed:demo` scripts → commit only the `motion` line (stage a HEAD copy + that line with `git update-index --cacheinfo`, then `git commit` without paths).
@@ -22,6 +24,8 @@
 8. Marquee wrapper is `dir="ltr"` (its keyframes translate left; RTL would leave a gap).
 9. Responsive grids need `grid-cols-1` as base (implicit tracks grow to content → horizontal scroll).
 10. Shared app nav (labels + icons + groups): `src/components/app-nav.ts` (plain module, usable from server components).
+11. App pages need a session; sign-in goes through hosted InsForge auth (agent can't sign in). Shell was checked with a temporary unauthenticated copy of the layout (deleted). Real pages not seen signed in.
+12. Not touched (other sessions' uncommitted edits): `applications/[id]/page.tsx`, `submit-panel.tsx`, `applications/actions.ts`, `chat/_components/tool-parts.tsx`. They pick up the new `Card` / tokens automatically.
 
 ---
 

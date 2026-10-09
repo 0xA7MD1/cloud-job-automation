@@ -13,7 +13,7 @@ export function OAuthButtons({ next }: { next: string }) {
         <form key={provider.id} action={oauthAction}>
           <input type="hidden" name="provider" value={provider.id} />
           <input type="hidden" name="next" value={next} />
-          <Button type="submit" variant="outline" className="w-full">
+          <Button type="submit" variant="glass" size="lg" className="w-full">
             {provider.label}
           </Button>
         </form>

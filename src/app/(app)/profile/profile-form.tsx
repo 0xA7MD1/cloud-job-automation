@@ -3,7 +3,7 @@
 import { startTransition, useActionState, useEffect, useState } from "react";
 import { PlusIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Button, CtaIcon } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Field,
@@ -214,8 +214,9 @@ export function ProfileForm({ profile, answers, preferences, cvFiles }: Props) {
 
       <div className="flex flex-col gap-2">
         <FieldError>{state.error}</FieldError>
-        <Button type="submit" disabled={pending} className="self-start">
+        <Button type="submit" variant="cta" disabled={pending} className="self-start">
           {pending ? "جاري الحفظ…" : "احفظ"}
+          <CtaIcon />
         </Button>
       </div>
     </form>

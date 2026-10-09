@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { FileCheck2Icon } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
+import { SegmentedNav } from "@/components/segmented-nav";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, CtaIcon } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { STATUS_LABELS, STATUS_TONE } from "@/lib/apply/labels";
@@ -10,7 +14,6 @@ import { requireUser } from "@/lib/auth";
 import type { Application, ApplicationStatus, Company, Job, MonthlyApplyUsage } from "@/lib/db/types";
 import { formatDateTime } from "@/lib/format";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
-import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "الطلبات" };
 
@@ -29,10 +32,14 @@ type Row = Pick<Application, "id" | "status" | "status_detail" | "updated_at" | 
 export default function ApplicationsPage({ searchParams }: PageProps<"/applications">) {
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold">الطلبات</h1>
-        <p className="text-muted-foreground">جهّز الطلب من صفحة الوظائف أو الشات، راجعه هنا، وبعدها قدّم بضغطة.</p>
-      </div>
+      <PageHeader title="الطلبات" description="جهّز الطلب من صفحة الوظائف أو الشات، راجعه هنا، وبعدها قدّم بضغطة.">
+        <Button asChild variant="cta">
+          <Link href="/jobs">
+            اختر وظيفة
+            <CtaIcon />
+          </Link>
+        </Button>
+      </PageHeader>
       <Suspense fallback={<Skeleton className="h-96" />}>
         <ApplicationsSection searchParams={searchParams} />
       </Suspense>
@@ -67,7 +74,7 @@ async function ApplicationsSection({ searchParams }: { searchParams: Promise<Rec
   return (
     <div className="flex flex-col gap-6">
       {quota && (
-        <div className="flex flex-col gap-2 rounded-lg border p-4">
+        <div className="flex flex-col gap-2 rounded-2xl border border-hairline bg-card/50 p-4">
           <div className="flex justify-between text-sm">
             <span>تقديمات هذا الشهر</span>
             <span dir="ltr">
@@ -78,37 +85,38 @@ async function ApplicationsSection({ searchParams }: { searchParams: Promise<Rec
         </div>
       )}
 
-      <nav className="flex gap-1 rounded-lg bg-muted p-1 text-sm" aria-label="حالة الطلبات">
-        {TABS.map((t) => (
-          <Link
-            key={t.id}
-            href={`/applications?tab=${t.id}`}
-            aria-current={t.id === tab.id ? "page" : undefined}
-            className={cn(
-              "flex-1 rounded-md px-3 py-1.5 text-center text-muted-foreground",
-              t.id === tab.id && "bg-background font-medium text-foreground shadow-sm",
-            )}
-          >
-            {t.label}
-            {countOf(t.id) > 0 && <span className="ms-1 text-xs">({countOf(t.id)})</span>}
-          </Link>
-        ))}
-      </nav>
+      <SegmentedNav
+        label="حالة الطلبات"
+        items={TABS.map((t) => ({
+          href: `/applications?tab=${t.id}`,
+          active: t.id === tab.id,
+          label: (
+            <>
+              {t.label}
+              {countOf(t.id) > 0 && <span className="ms-1 text-xs tabular-nums">({countOf(t.id)})</span>}
+            </>
+          ),
+        }))}
+      />
 
       {rows.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed p-10 text-center">
-          <p className="text-sm text-muted-foreground">ما فيه طلبات هنا.</p>
-          {tab.id === "review" && (
-            <Button asChild size="sm">
-              <Link href="/jobs">اختر وظيفة</Link>
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          icon={FileCheck2Icon}
+          action={
+            tab.id === "review" && (
+              <Button asChild variant="glass" size="sm">
+                <Link href="/jobs">اختر وظيفة</Link>
+              </Button>
+            )
+          }
+        >
+          ما فيه طلبات هنا.
+        </EmptyState>
       ) : (
-        <ul className="divide-y rounded-lg border">
+        <ul className="divide-y divide-hairline overflow-hidden rounded-2xl border border-hairline bg-card/50">
           {rows.map((r) => (
             <li key={r.id}>
-              <Link href={`/applications/${r.id}`} className="flex flex-wrap items-center gap-3 p-4 hover:bg-muted/50">
+              <Link href={`/applications/${r.id}`} className="flex flex-wrap items-center gap-3 p-4 outline-none transition-colors hover:bg-foreground/5 focus-visible:bg-foreground/5">
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <span className="font-medium" dir="auto">
                     {r.job.title}

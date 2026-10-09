@@ -69,13 +69,13 @@ export function Chat({ id, initialMessages }: { id: string | null; initialMessag
       <div className="flex flex-1 flex-col gap-6">
         {messages.length === 0 && (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 py-16 text-center">
-            <h1 className="text-xl font-semibold">وش تدوّر؟</h1>
+            <h1 className="text-2xl leading-[1.25] font-semibold sm:text-3xl">وش تدوّر؟</h1>
             <p className="max-w-md text-sm text-muted-foreground">
               قل لي نوع الشركات والمدينة، وألقى لك الشركات ووظائفها من مواقعها الرسمية.
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               {SUGGESTIONS.map((s) => (
-                <Button key={s} variant="outline" size="sm" onClick={() => send(s)}>
+                <Button key={s} variant="glass" size="sm" onClick={() => send(s)}>
                   {s}
                 </Button>
               ))}
@@ -101,7 +101,7 @@ export function Chat({ id, initialMessages }: { id: string | null; initialMessag
       </div>
 
       <form
-        className="sticky bottom-4 flex items-end gap-2 rounded-xl border bg-background p-2 shadow-sm"
+        className="sticky bottom-4 flex items-end gap-2 rounded-2xl border border-hairline bg-background/80 p-2 shadow-(--card-shadow) backdrop-blur-xl"
         onSubmit={(event) => {
           event.preventDefault();
           send(input);
@@ -124,11 +124,11 @@ export function Chat({ id, initialMessages }: { id: string | null; initialMessag
           dir="auto"
         />
         {busy ? (
-          <Button type="button" size="icon" variant="outline" onClick={() => stop()} aria-label="أوقف">
+          <Button type="button" size="icon-lg" variant="outline" className="rounded-full" onClick={() => stop()} aria-label="أوقف">
             <SquareIcon aria-hidden />
           </Button>
         ) : (
-          <Button type="submit" size="icon" disabled={!input.trim()} aria-label="أرسل">
+          <Button type="submit" size="icon-lg" className="rounded-full" disabled={!input.trim()} aria-label="أرسل">
             <ArrowUpIcon aria-hidden />
           </Button>
         )}

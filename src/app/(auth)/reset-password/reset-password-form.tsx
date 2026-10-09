@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useActionState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Button, CtaIcon } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { resetPasswordAction, type AuthFormState } from "../actions";
@@ -69,8 +69,9 @@ export function ResetPasswordForm() {
           />
           <FieldError>{state.error}</FieldError>
         </Field>
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" variant="cta" size="lg" className="w-full justify-between ps-5" disabled={pending}>
           {pending ? "جاري الحفظ…" : "احفظ كلمة المرور"}
+          <CtaIcon />
         </Button>
       </FieldGroup>
     </form>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requireUser } from "@/lib/auth";
 import type { FileRow } from "@/lib/db/types";
@@ -12,12 +13,10 @@ export const metadata: Metadata = { title: "ملفاتي" };
 export default function FilesPage() {
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold">ملفاتي</h1>
-        <p className="text-muted-foreground">
-          سيرتك وخطاباتك. الملفات خاصة فيك: ما أحد يشوفها غيرك، والتنزيل برابط مؤقت.
-        </p>
-      </div>
+      <PageHeader
+        title="ملفاتي"
+        description="سيرتك وخطاباتك. الملفات خاصة فيك: ما أحد يشوفها غيرك، والتنزيل برابط مؤقت."
+      />
       <Suspense
         fallback={
           <div className="flex flex-col gap-4">
@@ -44,7 +43,9 @@ async function FilesSection() {
 
   return (
     <div className="flex flex-col gap-6">
-      <UploadForm userId={user.id} />
+      <div className="rounded-2xl border border-hairline bg-card/50 p-4 sm:p-5">
+        <UploadForm userId={user.id} />
+      </div>
       <FileList files={(data ?? []) as Pick<FileRow, "id" | "kind" | "file_name" | "size_bytes" | "created_at">[]} />
     </div>
   );

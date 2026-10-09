@@ -17,8 +17,8 @@ export function ChatLinks({ chats }: { chats: { id: string; title: string | null
             href={href}
             aria-current={pathname === href ? "page" : undefined}
             className={cn(
-              "truncate rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground",
-              pathname === href && "bg-muted text-foreground",
+              "truncate rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground",
+              pathname === href && "bg-foreground/10 text-foreground",
             )}
             dir="auto"
           >

@@ -1,6 +1,6 @@
+import { Stage } from "@/components/stage";
 import { BlurFade } from "@/components/ui/blur-fade";
 import { SectionHeading } from "./section-heading";
-import { Stage } from "./stage";
 import { WatchDemo } from "./watch-demo";
 
 export function WatchItApply() {

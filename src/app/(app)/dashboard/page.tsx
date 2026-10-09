@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { CheckCircle2Icon, CircleIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/page-header";
+import { Button, CtaIcon } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,7 +17,7 @@ export const metadata: Metadata = { title: "الرئيسية" };
 export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-8">
-      <Suspense fallback={<Skeleton className="h-9 w-64" />}>
+      <Suspense fallback={<Skeleton className="h-16 w-72" />}>
         <Greeting />
       </Suspense>
       <div className="grid gap-4 md:grid-cols-2">
@@ -37,10 +38,14 @@ export default function DashboardPage() {
 async function Greeting() {
   const user = await requireUser();
   return (
-    <div className="flex flex-col gap-1">
-      <h1 className="text-2xl font-bold">أهلًا{user.name ? ` ${user.name}` : ""}</h1>
-      <p className="text-muted-foreground">كمّل التجهيز تحت، وبعدها قل للشات وش تدوّر.</p>
-    </div>
+    <PageHeader title={`أهلًا${user.name ? ` ${user.name}` : ""}`} description="كمّل التجهيز تحت، وبعدها قل للشات وش تدوّر.">
+      <Button asChild variant="cta">
+        <Link href="/chat">
+          افتح الشات
+          <CtaIcon />
+        </Link>
+      </Button>
+    </PageHeader>
   );
 }
 
@@ -151,7 +156,10 @@ async function ApplicationsCard() {
         <ul className="grid grid-cols-2 gap-3">
           {rows.map((row) => (
             <li key={row.label}>
-              <Link href={row.href} className="flex flex-col rounded-lg border p-3 hover:bg-muted/50">
+              <Link
+                href={row.href}
+                className="flex flex-col rounded-xl border border-hairline bg-background/40 p-3 outline-none transition-colors hover:bg-foreground/5 focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
                 <span className="text-2xl font-bold tabular-nums">{row.value}</span>
                 <span className="text-sm text-muted-foreground">{row.label}</span>
               </Link>

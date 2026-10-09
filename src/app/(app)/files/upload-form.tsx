@@ -93,7 +93,7 @@ export function UploadForm({ userId }: { userId: string }) {
             {kind === "other" ? "PDF أو Word أو صورة" : "PDF أو Word"}، حتى {rule.maxBytes / (1024 * 1024)}MB.
           </FieldDescription>
         </Field>
-        <Button type="submit" disabled={pending} className="sm:mb-7">
+        <Button type="submit" variant="cta" disabled={pending} className="sm:mb-7">
           <UploadIcon data-icon="inline-start" aria-hidden />
           {pending ? "جاري الرفع…" : "ارفع"}
         </Button>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requireUser } from "@/lib/auth";
 import type { Profile } from "@/lib/db/types";
@@ -12,10 +13,7 @@ export const metadata: Metadata = { title: "ملفي" };
 export default function ProfilePage() {
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold">ملفي</h1>
-        <p className="text-muted-foreground">كل ما كان كامل، قلّت الأسئلة الي نوقف عندها وقت التقديم.</p>
-      </div>
+      <PageHeader title="ملفي" description="كل ما كان كامل، قلّت الأسئلة الي نوقف عندها وقت التقديم." />
       <Suspense fallback={<Skeleton className="h-[40rem]" />}>
         <ProfileSection />
       </Suspense>

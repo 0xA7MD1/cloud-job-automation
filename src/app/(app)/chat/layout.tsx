@@ -10,7 +10,7 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="grid gap-6 md:grid-cols-[14rem_minmax(0,1fr)]">
       <aside className="hidden flex-col gap-3 md:flex">
-        <Button asChild variant="outline" className="justify-start">
+        <Button asChild variant="glass" className="justify-start">
           {/* رابط عادي (مو تنقل داخلي): يحمّل الصفحة من جديد فتبدأ محادثة فاضية فعلًا */}
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a href="/chat">
@@ -24,7 +24,7 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
       </aside>
       <div className="min-w-0">
         <div className="mb-4 md:hidden">
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="glass" size="sm">
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a href="/chat">
               <PlusIcon data-icon="inline-start" aria-hidden />

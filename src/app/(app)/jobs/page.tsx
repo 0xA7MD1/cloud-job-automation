@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { ExternalLinkIcon } from "lucide-react";
+import { BriefcaseBusinessIcon, ExternalLinkIcon } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
+import { SegmentedNav } from "@/components/segmented-nav";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, CtaIcon } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requireUser } from "@/lib/auth";
 import { STATUS_LABELS } from "@/lib/apply/labels";
 import type { Application, Company, Job, UserJob } from "@/lib/db/types";
 import { formatDateTime } from "@/lib/format";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
-import { cn } from "@/lib/utils";
 import { FollowButton, JobStatusButtons, PrepareButton } from "./_components/job-buttons";
 
 export const metadata: Metadata = { title: "الوظائف" };
@@ -35,12 +37,17 @@ type Row = Pick<UserJob, "status" | "created_at"> & {
 export default function JobsPage({ searchParams }: PageProps<"/jobs">) {
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold">الوظائف</h1>
-        <p className="text-muted-foreground">
-          من لوحات التوظيف الرسمية للشركات. تنضاف هنا من الشات، ومن فحص الشركات الي تتابعها مرتين باليوم.
-        </p>
-      </div>
+      <PageHeader
+        title="الوظائف"
+        description="من لوحات التوظيف الرسمية للشركات. تنضاف هنا من الشات، ومن فحص الشركات الي تتابعها مرتين باليوم."
+      >
+        <Button asChild variant="cta">
+          <Link href="/chat">
+            اطلب من الشات
+            <CtaIcon />
+          </Link>
+        </Button>
+      </PageHeader>
       <Suspense fallback={<Skeleton className="h-96" />}>
         <JobsSection searchParams={searchParams} />
       </Suspense>
@@ -82,35 +89,26 @@ async function JobsSection({ searchParams }: { searchParams: Promise<Record<stri
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_16rem]">
       <section className="flex flex-col gap-4">
-        <nav className="flex gap-1 rounded-lg bg-muted p-1 text-sm" aria-label="حالة الوظائف">
-          {TABS.map((tab) => (
-            <Link
-              key={tab.status}
-              href={`/jobs?status=${tab.status}`}
-              aria-current={tab.status === status ? "page" : undefined}
-              className={cn(
-                "flex-1 rounded-md px-3 py-1.5 text-center text-muted-foreground",
-                tab.status === status && "bg-background font-medium text-foreground shadow-sm",
-              )}
-            >
-              {tab.label}
-            </Link>
-          ))}
-        </nav>
+        <SegmentedNav
+          label="حالة الوظائف"
+          items={TABS.map((tab) => ({ href: `/jobs?status=${tab.status}`, label: tab.label, active: tab.status === status }))}
+        />
 
         {jobs.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed p-10 text-center">
-            <p className="text-sm text-muted-foreground">
-              {status === "new" ? "ما فيه وظائف للحين. اطلبها من الشات." : "ما فيه شي هنا."}
-            </p>
-            {status === "new" && (
-              <Button asChild size="sm">
-                <Link href="/chat">افتح الشات</Link>
-              </Button>
-            )}
-          </div>
+          <EmptyState
+            icon={BriefcaseBusinessIcon}
+            action={
+              status === "new" && (
+                <Button asChild variant="glass" size="sm">
+                  <Link href="/chat">افتح الشات</Link>
+                </Button>
+              )
+            }
+          >
+            {status === "new" ? "ما فيه وظائف للحين. اطلبها من الشات." : "ما فيه شي هنا."}
+          </EmptyState>
         ) : (
-          <ul className="divide-y rounded-lg border">
+          <ul className="divide-y divide-hairline overflow-hidden rounded-2xl border border-hairline bg-card/50">
             {jobs.map(({ job, status: jobStatus }) => (
               <li key={job.id} className="flex flex-wrap items-center gap-3 p-4">
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -157,7 +155,7 @@ async function JobsSection({ searchParams }: { searchParams: Promise<Record<stri
         ) : (
           <ul className="flex flex-col gap-2">
             {companies.map((company) => (
-              <li key={company.id} className="flex flex-col gap-1 rounded-lg border p-3">
+              <li key={company.id} className="flex flex-col gap-1 rounded-2xl border border-hairline bg-card/50 p-3">
                 <span className="font-medium" dir="auto">
                   {company.name}
                 </span>

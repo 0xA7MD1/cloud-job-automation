@@ -2,8 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { DownloadIcon, Trash2Icon } from "lucide-react";
+import { DownloadIcon, FolderOpenIcon, Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { FileRow } from "@/lib/db/types";
@@ -15,10 +16,10 @@ type ListedFile = Pick<FileRow, "id" | "kind" | "file_name" | "size_bytes" | "cr
 
 export function FileList({ files }: { files: ListedFile[] }) {
   if (files.length === 0) {
-    return <p className="py-8 text-center text-sm text-muted-foreground">ما فيه ملفات للحين.</p>;
+    return <EmptyState icon={FolderOpenIcon}>ما فيه ملفات للحين. ارفع سيرتك الذاتية من فوق.</EmptyState>;
   }
   return (
-    <ul className="divide-y rounded-lg border">
+    <ul className="divide-y divide-hairline overflow-hidden rounded-2xl border border-hairline bg-card/50">
       {files.map((file) => (
         <FileItem key={file.id} file={file} />
       ))}

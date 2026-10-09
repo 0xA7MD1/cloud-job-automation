@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ArrowLeftIcon, LogInIcon } from "lucide-react";
 import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
+import { Stage } from "@/components/stage";
 import { Button, CtaIcon } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ProductPreview } from "./product-preview";
-import { Stage } from "./stage";
 
 // دخول الهيرو بـCSS (بدون JS) ⇒ يظهر من أول رسم حتى قبل التحميل الكامل
 const enter =

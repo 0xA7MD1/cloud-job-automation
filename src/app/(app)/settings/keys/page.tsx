@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requireUser } from "@/lib/auth";
 import { PROVIDER_INFO, type ProviderKind } from "@/lib/byok/providers";
@@ -18,12 +19,10 @@ const SECTIONS: { kind: ProviderKind; title: string; description: string }[] = [
 export default function KeysPage() {
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold">المفاتيح</h1>
-        <p className="text-muted-foreground">
-          مفاتيحك تنحفظ مشفّرة، وما نعرض منها إلا آخر 4 أحرف. الاستهلاك على حسابك عند كل مزود.
-        </p>
-      </div>
+      <PageHeader
+        title="المفاتيح"
+        description="مفاتيحك تنحفظ مشفّرة، وما نعرض منها إلا آخر 4 أحرف. الاستهلاك على حسابك عند كل مزود."
+      />
       <Suspense fallback={<Skeleton className="h-96" />}>
         <KeySections />
       </Suspense>
@@ -46,7 +45,7 @@ async function KeySections() {
         <h2 className="text-lg font-semibold">{section.title}</h2>
         <p className="text-sm text-muted-foreground">{section.description}</p>
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {PROVIDERS.filter((p) => PROVIDER_INFO[p].kind === section.kind).map((provider) => (
           <ProviderCard key={provider} provider={provider} row={rows.get(provider) ?? null} />
         ))}

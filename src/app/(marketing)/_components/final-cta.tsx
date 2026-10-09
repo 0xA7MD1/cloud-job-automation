@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { LogInIcon } from "lucide-react";
+import { Stage } from "@/components/stage";
 import { BlurFade } from "@/components/ui/blur-fade";
 import { Button, CtaIcon } from "@/components/ui/button";
-import { Stage } from "./stage";
 
 export function FinalCta() {
   return (

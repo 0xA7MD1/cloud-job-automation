@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button, CtaIcon } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldSeparator } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { OAuthButtons } from "../_components/oauth-buttons";
@@ -49,8 +49,9 @@ export function SignUpForm() {
             <FieldDescription>8 أحرف أو أكثر.</FieldDescription>
             <FieldError>{state.error}</FieldError>
           </Field>
-          <Button type="submit" disabled={pending}>
+          <Button type="submit" variant="cta" size="lg" className="w-full justify-between ps-5" disabled={pending}>
             {pending ? "جاري إنشاء الحساب…" : "إنشاء حساب"}
+            <CtaIcon />
           </Button>
         </FieldGroup>
       </form>
