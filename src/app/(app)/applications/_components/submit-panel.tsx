@@ -6,7 +6,7 @@ import { SendIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { cancelApplicationAction, submitApplicationAction } from "../actions";
+import { cancelApplicationAction, confirmSubmittedAction, submitApplicationAction } from "../actions";
 
 interface Props {
   applicationId: string;
@@ -80,6 +80,45 @@ export function SubmitPanel({ applicationId, canSubmit, canCancel, provider, pro
               </Button>
             </div>
           </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** محاولة إرسال بدون تأكيد: ما نعيد الإرسال، المستخدم يتحقق ويأكد بنفسه */
+export function UnconfirmedAttempt({ applicationId, applyUrl }: { applicationId: string; applyUrl: string | null }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>انضغط «إرسال» وما تأكدنا</CardTitle>
+        <CardDescription>
+          ما نعيد الإرسال تلقائيًا عشان ما يوصل طلبك مرتين. شيك بريدك: لو وصلك تأكيد من الشركة، أكّده هنا. ولو ما وصل، قدّم
+          بنفسك من صفحة التقديم.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-wrap gap-2">
+        <Button
+          disabled={pending}
+          onClick={() =>
+            startTransition(async () => {
+              const result = await confirmSubmittedAction(applicationId);
+              if (!result.ok) toast.error(result.error);
+              else toast.success("انسجّل كمُرسل.");
+              router.refresh();
+            })
+          }
+        >
+          وصلني تأكيد، انرسل
+        </Button>
+        {applyUrl && (
+          <Button asChild variant="outline">
+            <a href={applyUrl} target="_blank" rel="noopener noreferrer nofollow">
+              افتح صفحة التقديم
+            </a>
+          </Button>
         )}
       </CardContent>
     </Card>

@@ -16,8 +16,12 @@ export class TriggerNotConfiguredError extends Error {
   }
 }
 
+/** مفتاح بيئة التطوير للمالك. محليًا لو TRIGGER_SECRET_KEY نفسه مفتاح تطوير، كل شي أصلًا على جهازه. */
 function ownerKey(): string | null {
-  return process.env.TRIGGER_OWNER_SECRET_KEY?.trim() || null;
+  const explicit = process.env.TRIGGER_OWNER_SECRET_KEY?.trim();
+  if (explicit) return explicit;
+  const main = process.env.TRIGGER_SECRET_KEY?.trim();
+  return main?.startsWith("tr_dev_") ? main : null;
 }
 
 /** وين تشتغل مهام هذا المستخدم */

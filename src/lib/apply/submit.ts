@@ -1,7 +1,9 @@
 import type { Page } from "playwright-core";
 import type { SupportedAts } from "@/lib/jobs/ats";
 import type { AtsAdapter, FillPlan, FillReport, Outcome } from "./adapters/common";
+import { ashbyAdapter } from "./adapters/ashby";
 import { greenhouseAdapter } from "./adapters/greenhouse";
+import { leverAdapter } from "./adapters/lever";
 
 // تسلسل التقديم داخل المتصفح (الخطوة 8). يعتمد على دوال تمرّرها المهمة
 // (حفظ الحالة، تسجيل محاولة الإرسال، انتظار المستخدم) عشان يبقى قابل للاختبار.
@@ -10,6 +12,8 @@ export type SubmitStep = "open" | "fill" | "upload" | "review" | "submit" | "con
 
 const ADAPTERS: Partial<Record<SupportedAts, AtsAdapter>> = {
   greenhouse: greenhouseAdapter,
+  lever: leverAdapter,
+  ashby: ashbyAdapter,
 };
 
 export function adapterFor(ats: SupportedAts): AtsAdapter | null {

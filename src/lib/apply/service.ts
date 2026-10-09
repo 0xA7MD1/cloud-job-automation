@@ -233,3 +233,35 @@ export async function cancelApplication(
   await admin.database.from("application_events").insert({ application_id: app.id, user_id: userId, type: "cancelled" });
   return { ok: true, data: undefined };
 }
+
+/**
+ * بعد محاولة إرسال ما انتهت بصفحة تأكيد: المستخدم شيك بريده ولقى تأكيد الشركة.
+ * ما نعيد الإرسال أبدًا (قاعدة 7)، بس نسجّل كلامه. الحدث يوضح إنه تأكيد يدوي بدون دليل.
+ */
+export async function confirmSubmittedManually(
+  insforge: SessionClient,
+  userId: string,
+  applicationId: string,
+): Promise<ServiceResult<undefined>> {
+  const { data } = await insforge.database
+    .from("applications")
+    .select("id, status, submit_attempted_at")
+    .eq("id", applicationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  const app = data as Pick<Application, "id" | "status" | "submit_attempted_at"> | null;
+  if (!app) return { ok: false, error: "الطلب مو موجود." };
+  if (!app.submit_attempted_at || !["failed", "cancelled"].includes(app.status)) {
+    return { ok: false, error: "هذا الخيار لطلب انضغط فيه «إرسال» وما ظهر تأكيد." };
+  }
+  const admin = getInsForgeAdminClient();
+  await admin.database
+    .from("applications")
+    .update({ status: "submitted", submitted_at: new Date().toISOString(), error: null, status_detail: "أكّدت الإرسال بنفسك (بدون صورة تأكيد)." })
+    .eq("id", app.id)
+    .eq("user_id", userId);
+  await admin.database
+    .from("application_events")
+    .insert({ application_id: app.id, user_id: userId, type: "submitted", data: { manual: true } });
+  return { ok: true, data: undefined };
+}

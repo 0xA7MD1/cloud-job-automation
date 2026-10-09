@@ -107,13 +107,17 @@
 | `INSFORGE_API_KEY` | Vercel + Trigger.dev | مفتاح admin لـ`createAdminClient`، خادم فقط |
 | `BYOK_MASTER_KEY` | Vercel + Trigger.dev | 32 بايت base64 |
 | `TRIGGER_PROJECT_REF` | محليًا + CI | معرّف المشروع (`proj_...`) يقرأه `trigger.config.ts` |
-| `TRIGGER_SECRET_KEY` | Vercel | عشان التطبيق يشغّل المهام |
+| `TRIGGER_SECRET_KEY` | Vercel + محليًا | عشان التطبيق يشغّل المهام. محليًا `tr_dev_...` ⇒ كل المهام على جهازك |
+| `TRIGGER_OWNER_SECRET_KEY` | Vercel (اختياري) | مفتاح التطوير `tr_dev_...`: مهام المالك (`entitlements.plan = owner`) تشتغل على جهازه بالمتصفح المحلي |
+| `LOCAL_BROWSER_CHANNEL` | محليًا (اختياري) | `chrome` (الافتراضي) أو `msedge` للمتصفح المحلي |
 
 القيم كلها تُقرأ عبر `readEnv()` في `src/lib/env.ts` (تتحقق بـZod وقت الاستخدام، فالبناء يشتغل بدون أسرار). الأسماء في `.env.example`.
 
 ## الهيكل والأوامر
 
 - `src/app/` الواجهة ومسارات API · `src/lib/` المنطق المشترك · `trigger/` مهام Trigger.dev · `migrations/` سكيمة InsForge (`<14 رقم>_<اسم>.sql`)
+- التقديم: `src/lib/apply/` (الأسئلة، الإجابات، الخطاب، `submit.ts`، ومحوّلات `adapters/` لكل نظام توظيف) · المتصفح: `src/lib/browser/` (Steel + محلي) · الخط العربي للـPDF: `assets/fonts/`
+- أي تعديل على محوّل: جرّبه على نموذج حقيقي ببيانات وهمية و`skipFiles: true` وبدون `submit()`. ممنوع ترسل طلب حقيقي في التجربة
 - أي تعديل على السكيمة: ملف migration جديد (لا تعدّل ملف انطبق)، وحدّث `src/lib/db/types.ts`، وأضف حالته في `migrations/schema.test.ts`
 - `pnpm dev` · `pnpm check` (lint + typecheck + test) · `pnpm build` · `pnpm trigger:dev`
 - تطبيق السكيمة: `npx @insforge/cli db migrations up --all` (بعد `link`)

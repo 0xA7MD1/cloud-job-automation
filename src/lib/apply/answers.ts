@@ -103,7 +103,7 @@ function fromBank(field: FormField, bank: Answers): string | null {
   if (/salary|compensation expectation|expected (pay|compensation|salary)|desired (pay|salary)/i.test(q)) {
     return bank.expected_salary || null;
   }
-  if (/how did you (hear|find|learn)|where did you (hear|find)|referral source/i.test(q)) return bank.how_did_you_hear || null;
+  if (/how (did )?you (hear|heard|find|found|learn)|where did you (hear|find)|referral source/i.test(q)) return bank.how_did_you_hear || null;
   if (field.type !== "select" && field.type !== "boolean" && /\blanguages?\b/i.test(field.label)) return bank.languages || null;
   // «يحق لك العمل» نعم/لا يعتمد على بلد الوظيفة: بنك الإجابات نص حر، فنتركها للذكاء
 

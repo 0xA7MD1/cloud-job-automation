@@ -19,7 +19,8 @@ import { createRunReadToken } from "@/lib/trigger/server";
 import { AnswersForm } from "../_components/answers-form";
 import { CoverLetterEditor, CvPicker, DownloadButton, OutreachDrafts, ReprepareButton } from "../_components/application-parts";
 import { RunWatcher } from "../_components/run-watcher";
-import { SubmitPanel } from "../_components/submit-panel";
+import { LiveView } from "../_components/live-view";
+import { SubmitPanel, UnconfirmedAttempt } from "../_components/submit-panel";
 
 export const metadata: Metadata = { title: "مراجعة الطلب" };
 
@@ -162,6 +163,14 @@ async function ApplicationView({ params }: { params: Promise<{ id: string }> }) 
         missing={missing.length}
         quota={quota ? { used: quota.used, limit: quota.apply_limit } : null}
       />
+
+      {app.status === "needs_user" && app.browser_provider === "steel" && (
+        <LiveView applicationId={app.id} reason={app.status_detail} />
+      )}
+
+      {app.submit_attempted_at && (app.status === "failed" || app.status === "cancelled") && (
+        <UnconfirmedAttempt applicationId={app.id} applyUrl={form?.applyUrl ?? app.job.url} />
+      )}
 
       {app.status === "needs_user" && app.browser_provider === "local" && (
         <Alert>

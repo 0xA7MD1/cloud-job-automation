@@ -26,6 +26,9 @@ export default function DashboardPage() {
         <Suspense fallback={<Skeleton className="h-40" />}>
           <QuotaCard />
         </Suspense>
+        <Suspense fallback={<Skeleton className="h-40" />}>
+          <ApplicationsCard />
+        </Suspense>
       </div>
     </div>
   );
@@ -121,6 +124,40 @@ async function QuotaCard() {
           <span className="text-base font-normal text-muted-foreground"> / {limit}</span>
         </p>
         <Progress value={percent} aria-label={`استخدمت ${percent}% من الحصة`} />
+      </CardContent>
+    </Card>
+  );
+}
+
+async function ApplicationsCard() {
+  const user = await requireUser();
+  const insforge = await createInsForgeServerClient();
+  const { data } = await insforge.database.from("applications").select("status").eq("user_id", user.id);
+  const count = (statuses: string[]) => ((data ?? []) as { status: string }[]).filter((r) => statuses.includes(r.status)).length;
+  const rows = [
+    { label: "ينتظرك", value: count(["needs_user"]), href: "/applications?tab=active" },
+    { label: "جاهزة للمراجعة", value: count(["ready", "failed"]), href: "/applications?tab=review" },
+    { label: "شغّالة الحين", value: count(["preparing", "queued", "running"]), href: "/applications?tab=active" },
+    { label: "انرسلت", value: count(["submitted"]), href: "/applications?tab=submitted" },
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>الطلبات</CardTitle>
+        <CardDescription>جهّز من الوظائف أو الشات، وقدّم من صفحة الطلب.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ul className="grid grid-cols-2 gap-3">
+          {rows.map((row) => (
+            <li key={row.label}>
+              <Link href={row.href} className="flex flex-col rounded-lg border p-3 hover:bg-muted/50">
+                <span className="text-2xl font-bold tabular-nums">{row.value}</span>
+                <span className="text-sm text-muted-foreground">{row.label}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </CardContent>
     </Card>
   );

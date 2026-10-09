@@ -4,6 +4,7 @@ import { z } from "zod";
 import { readForm, readStoredAnswers, answerValueSchema, type StoredAnswers } from "@/lib/apply/form";
 import {
   cancelApplication,
+  confirmSubmittedManually,
   isOwnerAccount,
   reprepareApplication,
   startApplication,
@@ -136,4 +137,11 @@ export async function cancelApplicationAction(applicationId: string): Promise<Ap
   if (!id.success) return { ok: false, error: "طلب غير صالح." };
   const user = await requireUser();
   return cancelApplication(await createInsForgeServerClient(), user.id, id.data);
+}
+
+export async function confirmSubmittedAction(applicationId: string): Promise<AppActionResult> {
+  const id = z.uuid().safeParse(applicationId);
+  if (!id.success) return { ok: false, error: "طلب غير صالح." };
+  const user = await requireUser();
+  return confirmSubmittedManually(await createInsForgeServerClient(), user.id, id.data);
 }

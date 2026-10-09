@@ -2,7 +2,7 @@ import type { Page } from "playwright-core";
 import { describe, expect, it, vi } from "vitest";
 import { liveSessionId } from "@/lib/browser";
 import type { AtsAdapter, FillPlan, FillReport, Outcome } from "./adapters/common";
-import { runSubmission, type SubmissionHooks } from "./submit";
+import { adapterFor, runSubmission, type SubmissionHooks } from "./submit";
 
 const page = { waitForTimeout: async () => {} } as unknown as Page;
 
@@ -85,5 +85,13 @@ describe("liveSessionId", () => {
     expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-a[0-9a-f]{3}-[0-9a-f]{12}$/);
     expect(liveSessionId("app-1", "run_1")).toBe(id);
     expect(liveSessionId("app-1", "run_2")).not.toBe(id);
+  });
+});
+
+describe("adapters", () => {
+  it("cover every supported ATS", () => {
+    expect(adapterFor("greenhouse")?.ats).toBe("greenhouse");
+    expect(adapterFor("lever")?.ats).toBe("lever");
+    expect(adapterFor("ashby")?.ats).toBe("ashby");
   });
 });
