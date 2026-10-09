@@ -158,7 +158,7 @@ async function ApplicationsCard() {
             <li key={row.label}>
               <Link
                 href={row.href}
-                className="flex flex-col rounded-xl border border-hairline bg-background/40 p-3 outline-none transition-colors hover:bg-foreground/5 focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="flex flex-col rounded-xl border border-hairline bg-background/40 p-3 outline-none transition-colors hover:bg-foreground/5 focus-visible:ring-3 focus-visible:ring-foreground/55"
               >
                 <span className="text-2xl font-bold tabular-nums">{row.value}</span>
                 <span className="text-sm text-muted-foreground">{row.label}</span>

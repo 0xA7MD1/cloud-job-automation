@@ -20,7 +20,7 @@ export function SegmentedNav({
           href={item.href}
           aria-current={item.active ? "page" : undefined}
           className={cn(
-            "flex-1 shrink-0 rounded-full px-4 py-1.5 text-center whitespace-nowrap text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
+            "flex-1 shrink-0 rounded-full px-4 py-1.5 text-center whitespace-nowrap text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-foreground/55",
             item.active && "bg-foreground/10 font-medium text-foreground",
           )}
         >

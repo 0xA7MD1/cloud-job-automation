@@ -43,7 +43,7 @@ export function HeaderNav() {
               href={`#${id}`}
               aria-current={active === id ? "location" : undefined}
               className={cn(
-                "block rounded-full px-4 py-1.5 text-sm text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
+                "block rounded-full px-4 py-1.5 text-sm text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-foreground/55",
                 active === id && "bg-foreground/10 text-foreground",
               )}
             >

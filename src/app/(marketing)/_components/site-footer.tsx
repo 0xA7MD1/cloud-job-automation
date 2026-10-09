@@ -10,7 +10,7 @@ async function CurrentYear() {
 }
 
 const linkClass =
-  "rounded-sm text-sm text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50";
+  "rounded-sm text-sm text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-foreground/55";
 
 export function SiteFooter() {
   return (

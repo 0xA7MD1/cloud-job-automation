@@ -18,7 +18,7 @@ export function Hero() {
           <a
             href="#watch"
             className={cn(
-              "group inline-flex items-center gap-2 rounded-full border border-hairline bg-(--glass) py-1 ps-3 pe-2.5 text-xs shadow-(--card-shadow) outline-none transition-colors hover:border-(--border-strong) focus-visible:ring-3 focus-visible:ring-ring/50 sm:text-sm",
+              "group inline-flex items-center gap-2 rounded-full border border-hairline bg-(--glass) py-1 ps-3 pe-2.5 text-xs shadow-(--card-shadow) outline-none transition-colors hover:border-(--border-strong) focus-visible:ring-3 focus-visible:ring-foreground/55 sm:text-sm",
               enter,
             )}
           >

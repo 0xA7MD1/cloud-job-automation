@@ -9,7 +9,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <ThemeToggle className="absolute top-4 end-4" />
         <Link
           href="/"
-          className="rounded-full text-xl font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="rounded-full text-xl font-semibold outline-none focus-visible:ring-3 focus-visible:ring-foreground/55"
         >
           مساعد التقديم
         </Link>

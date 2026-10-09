@@ -27,7 +27,7 @@ export function MobileMenu() {
                 <SheetClose asChild>
                   <a
                     href={`#${id}`}
-                    className="block rounded-xl px-3 py-3 text-base outline-none transition-colors hover:bg-foreground/5 focus-visible:ring-3 focus-visible:ring-ring/50"
+                    className="block rounded-xl px-3 py-3 text-base outline-none transition-colors hover:bg-foreground/5 focus-visible:ring-3 focus-visible:ring-foreground/55"
                   >
                     {label}
                   </a>

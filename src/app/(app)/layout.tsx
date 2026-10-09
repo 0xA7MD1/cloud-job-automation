@@ -25,7 +25,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center justify-between gap-2">
             <Link
               href="/dashboard"
-              className="rounded-md text-base font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="rounded-md text-base font-semibold outline-none focus-visible:ring-3 focus-visible:ring-foreground/55"
             >
               مساعد التقديم
             </Link>

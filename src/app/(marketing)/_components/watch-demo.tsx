@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useInView, useReducedMotion } from "motion/react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { AnimatePresence, motion, useInView } from "motion/react";
 import {
   CameraIcon,
   CheckIcon,
@@ -33,6 +33,18 @@ const STEPS = [
 const LAST = STEPS.length - 1;
 const at = (key: (typeof STEPS)[number]["key"]) => STEPS.findIndex((s) => s.key === key);
 
+const REDUCE = "(prefers-reduced-motion: reduce)";
+const subscribeReduce = (onChange: () => void) => {
+  const mql = window.matchMedia(REDUCE);
+  mql.addEventListener("change", onChange);
+  return () => mql.removeEventListener("change", onChange);
+};
+
+/** «تقليل الحركة» بدون اختلاف عن HTML الخادم: false وقت الـhydration، وبعدها القيمة الحقيقية */
+function usePrefersReducedMotion() {
+  return useSyncExternalStore(subscribeReduce, () => window.matchMedia(REDUCE).matches, () => false);
+}
+
 /** يمشي على الخطوات بس والقسم ظاهر، ويعيد من الأول بعد الدليل */
 function useStepLoop(active: boolean) {
   const [step, setStep] = useState(0);
@@ -56,7 +68,7 @@ function Timeline({ step }: { step: number }) {
             key={key}
             className={cn(
               "flex items-center gap-3 rounded-xl border px-3 py-2 transition-[opacity,border-color,background-color] duration-500 motion-reduce:transition-none",
-              state === "next" ? "border-dashed border-hairline opacity-40" : "border-hairline bg-background/60",
+              state === "next" ? "border-dashed border-hairline text-muted-foreground" : "border-hairline bg-background/60",
               state === "current" && "border-foreground/25 bg-foreground/[0.04]",
               attention && "border-foreground/40 bg-foreground/[0.08]",
             )}
@@ -64,6 +76,7 @@ function Timeline({ step }: { step: number }) {
             <span
               className={cn(
                 "grid size-7 shrink-0 place-items-center rounded-full border border-hairline transition-colors duration-500",
+                state === "next" && "opacity-50",
                 attention && "border-transparent bg-foreground text-background",
               )}
             >
@@ -230,7 +243,7 @@ function FormMock({ step }: { step: number }) {
 export function WatchDemo() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { amount: 0.35 });
-  const reduce = useReducedMotion();
+  const reduce = usePrefersReducedMotion();
   const looped = useStepLoop(inView && !reduce);
   // تقليل الحركة ⇒ لقطة ثابتة لآخر حالة
   const step = reduce ? LAST : looped;
