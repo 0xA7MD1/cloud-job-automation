@@ -3,7 +3,7 @@ import { updateSession } from "@insforge/sdk/ssr/middleware";
 
 // المسارات الي تحتاج دخول. هذا فحص سريع للتحويل بس؛ كل صفحة تتحقق بنفسها
 // عبر requireUser() لأن الـproxy مو حماية كافية لحاله.
-const PROTECTED_PREFIXES = ["/dashboard", "/chat", "/jobs", "/files", "/profile", "/settings"];
+const PROTECTED_PREFIXES = ["/dashboard", "/chat", "/jobs", "/applications", "/files", "/profile", "/settings"];
 
 function isProtected(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));

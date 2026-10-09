@@ -202,6 +202,14 @@ export interface Application {
   confirmation_ref: string | null;
   evidence_file_id: string | null;
   error: string | null;
+  /** ApplicationForm (src/lib/apply/form.ts) */
+  form: Json;
+  cover_letter_text: string | null;
+  cover_letter_docx_file_id: string | null;
+  /** { subject, email, message } */
+  outreach: Json;
+  status_detail: string | null;
+  prepared_at: Timestamp | null;
   created_at: Timestamp;
   updated_at: Timestamp;
 }

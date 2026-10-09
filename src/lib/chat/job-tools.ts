@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { startApplication } from "@/lib/apply/service";
 import type { Job } from "@/lib/db/types";
 import { getInsForgeAdminClient } from "@/lib/insforge/admin";
 import { AtsFetchError, atsBoardUrl } from "@/lib/jobs/ats";
@@ -158,6 +159,18 @@ export function createJobTools(ctx: ChatToolContext) {
           matched: matched.length,
           jobs: top,
         };
+      },
+    }),
+
+    prepareApplication: tool({
+      description:
+        "Start preparing an application for a job: fetch the form questions, fill answers from the profile, draft a cover letter. " +
+        "Use jobId from searchOfficialJobs. This does NOT submit: the user reviews and confirms on the application page.",
+      inputSchema: z.object({ jobId: z.uuid() }),
+      execute: async ({ jobId }): Promise<{ ok: true; applicationId: string; url: string } | ToolFailure> => {
+        const result = await startApplication(ctx.insforge, ctx.userId, jobId);
+        if (!result.ok) return { ok: false, error: result.error };
+        return { ok: true, applicationId: result.data.id, url: `/applications/${result.data.id}` };
       },
     }),
 

@@ -1,4 +1,5 @@
 import { defineConfig } from "@trigger.dev/sdk";
+import { additionalFiles } from "@trigger.dev/build/extensions/core";
 
 export default defineConfig({
   // معرّف المشروع من لوحة Trigger.dev (proj_...). مو سر، لكن يختلف لكل حساب.
@@ -17,5 +18,11 @@ export default defineConfig({
       factor: 2,
       randomize: true,
     },
+  },
+  build: {
+    // playwright-core يتصل بمتصفح بعيد (Steel) أو محلي (جهاز المالك): ما نحزمه، ولا ننزّل متصفح في السحابة
+    external: ["playwright-core", "chromium-bidi", "@react-pdf/renderer"],
+    // خط الـPDF العربي (src/lib/apply/documents.ts يقرأه من process.cwd()/assets/fonts)
+    extensions: [additionalFiles({ files: ["./assets/fonts/*.ttf"] })],
   },
 });

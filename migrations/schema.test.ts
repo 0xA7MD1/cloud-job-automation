@@ -201,6 +201,24 @@ describe("applications and quota", () => {
     ).toBeDefined();
   });
 
+  it("users edit the cover letter text but not the fetched form, drafts or status detail", async () => {
+    expect(
+      (await as(A, `update public.applications set cover_letter_text = 'Dear team' where id = '${appId}'`)).error,
+    ).toBeUndefined();
+    for (const column of ["form = '{}'", "outreach = '{}'", "status_detail = 'x'", "prepared_at = now()", "cover_letter_docx_file_id = null"]) {
+      expect((await as(A, `update public.applications set ${column} where id = '${appId}'`)).error).toBeDefined();
+    }
+    expect((await as(B, `update public.applications set cover_letter_text = 'x' where id = '${appId}' returning id`)).rows).toEqual([]);
+  });
+
+  it("exposes user emails to the admin only", async () => {
+    expect((await as(A, `select public.user_email('${A}')`)).error).toBeDefined();
+    await db.exec("set role project_admin");
+    const r = await db.query<{ email: string }>(`select public.user_email('${A}') as email`);
+    await db.exec("reset role");
+    expect(r.rows[0]?.email).toBe("a@x.test");
+  });
+
   it("counts this month's submit attempts against the limit", async () => {
     await db.exec(`
       insert into public.application_events (application_id, user_id, type) values

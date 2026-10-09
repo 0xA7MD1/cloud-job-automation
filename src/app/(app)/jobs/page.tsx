@@ -6,11 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requireUser } from "@/lib/auth";
-import type { Company, Job, UserJob } from "@/lib/db/types";
+import { STATUS_LABELS } from "@/lib/apply/labels";
+import type { Application, Company, Job, UserJob } from "@/lib/db/types";
 import { formatDateTime } from "@/lib/format";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
 import { cn } from "@/lib/utils";
-import { FollowButton, JobStatusButtons } from "./_components/job-buttons";
+import { FollowButton, JobStatusButtons, PrepareButton } from "./_components/job-buttons";
 
 export const metadata: Metadata = { title: "الوظائف" };
 
@@ -21,10 +22,12 @@ const TABS = [
 ] as const;
 type Status = (typeof TABS)[number]["status"];
 
+const SUPPORTED = new Set(["greenhouse", "lever", "ashby"]);
+
 const WORKPLACE: Record<string, string> = { remote: "عن بعد", hybrid: "هجين", onsite: "من المكتب" };
 
 type Row = Pick<UserJob, "status" | "created_at"> & {
-  job: Pick<Job, "id" | "title" | "location" | "workplace_type" | "department" | "url" | "posted_at" | "closed_at"> & {
+  job: Pick<Job, "id" | "source" | "title" | "location" | "workplace_type" | "department" | "url" | "posted_at" | "closed_at"> & {
     company: Pick<Company, "id" | "name" | "domain"> | null;
   };
 };
@@ -51,11 +54,11 @@ async function JobsSection({ searchParams }: { searchParams: Promise<Record<stri
 
   const user = await requireUser();
   const insforge = await createInsForgeServerClient();
-  const [{ data: rows }, { data: followed }] = await Promise.all([
+  const [{ data: rows }, { data: followed }, { data: apps }] = await Promise.all([
     insforge.database
       .from("user_jobs")
       .select(
-        "status, created_at, job:jobs(id, title, location, workplace_type, department, url, posted_at, closed_at, company:companies(id, name, domain))",
+        "status, created_at, job:jobs(id, source, title, location, workplace_type, department, url, posted_at, closed_at, company:companies(id, name, domain))",
       )
       .eq("user_id", user.id)
       .eq("status", status)
@@ -65,7 +68,11 @@ async function JobsSection({ searchParams }: { searchParams: Promise<Record<stri
       .from("user_companies")
       .select("company:companies(id, name, domain, ats, last_scanned_at)")
       .eq("user_id", user.id),
+    insforge.database.from("applications").select("id, job_id, status").eq("user_id", user.id),
   ]);
+  const appByJob = new Map(
+    ((apps ?? []) as Pick<Application, "id" | "job_id" | "status">[]).map((a) => [a.job_id, a]),
+  );
 
   const jobs = ((rows ?? []) as unknown as Row[]).filter((r) => r.job);
   const companies = ((followed ?? []) as unknown as { company: Pick<Company, "id" | "name" | "domain" | "ats" | "last_scanned_at"> | null }[])
@@ -127,6 +134,15 @@ async function JobsSection({ searchParams }: { searchParams: Promise<Record<stri
                   </span>
                   {job.posted_at && <span className="text-xs text-muted-foreground">نُشرت {formatDateTime(job.posted_at)}</span>}
                 </div>
+                {appByJob.has(job.id) ? (
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/applications/${appByJob.get(job.id)!.id}`}>
+                      الطلب: {STATUS_LABELS[appByJob.get(job.id)!.status]}
+                    </Link>
+                  </Button>
+                ) : (
+                  !job.closed_at && SUPPORTED.has(job.source) && <PrepareButton jobId={job.id} />
+                )}
                 <JobStatusButtons jobId={job.id} status={jobStatus} />
               </li>
             ))}

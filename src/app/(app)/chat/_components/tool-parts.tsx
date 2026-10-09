@@ -1,12 +1,13 @@
 "use client";
 
-import { BellIcon, BriefcaseBusinessIcon, BuildingIcon, ExternalLinkIcon, HistoryIcon, Loader2Icon, SearchIcon } from "lucide-react";
+import Link from "next/link";
+import { BellIcon, BriefcaseBusinessIcon, BuildingIcon, ExternalLinkIcon, FileTextIcon, HistoryIcon, Loader2Icon, SearchIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { ChatUIMessage } from "@/lib/chat/types";
 import { formatDateTime } from "@/lib/format";
-import { FollowButton, JobStatusButtons } from "../../jobs/_components/job-buttons";
+import { FollowButton, JobStatusButtons, PrepareButton } from "../../jobs/_components/job-buttons";
 
 type Part = ChatUIMessage["parts"][number];
 
@@ -157,6 +158,7 @@ export function ToolPartView({ part, onAsk, busy }: { part: Part; onAsk: (text: 
                       {job.postedAt && ` · ${formatDateTime(job.postedAt)}`}
                     </span>
                   </div>
+                  <PrepareButton jobId={job.jobId} />
                   <JobStatusButtons jobId={job.jobId} status="new" />
                 </li>
               ))}
@@ -166,6 +168,18 @@ export function ToolPartView({ part, onAsk, busy }: { part: Part; onAsk: (text: 
         </div>
       );
     }
+
+    case "tool-prepareApplication":
+      if (part.state !== "output-available") return <Pending label="يبدأ تجهيز الطلب…" />;
+      if (!part.output.ok) return <Failure text={part.output.error} />;
+      return (
+        <Button asChild variant="outline" size="sm" className="self-start">
+          <Link href={part.output.url}>
+            <FileTextIcon data-icon="inline-start" aria-hidden />
+            افتح الطلب وراجعه
+          </Link>
+        </Button>
+      );
 
     case "tool-followCompany":
       return (

@@ -2,9 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { BellIcon, BellOffIcon, BookmarkCheckIcon, BookmarkIcon, EyeOffIcon, Undo2Icon } from "lucide-react";
+import { BellIcon, BellOffIcon, BookmarkCheckIcon, BookmarkIcon, EyeOffIcon, SendIcon, Undo2Icon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { startApplicationAction } from "../../applications/actions";
 import { followCompanyAction, setJobStatusAction, unfollowCompanyAction, type JobActionResult } from "../actions";
 
 type JobStatus = "new" | "saved" | "dismissed";
@@ -84,6 +85,31 @@ export function FollowButton({ companyId, following: initial }: { companyId: str
     >
       <BellIcon data-icon="inline-start" aria-hidden />
       تابع
+    </Button>
+  );
+}
+
+/** يبدأ تجهيز الطلب (أسئلة + إجابات + خطاب) ويفتح صفحة المراجعة */
+export function PrepareButton({ jobId }: { jobId: string }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  return (
+    <Button
+      size="sm"
+      disabled={pending}
+      onClick={() =>
+        startTransition(async () => {
+          const result = await startApplicationAction(jobId);
+          if (!result.ok) {
+            toast.error(result.error);
+            return;
+          }
+          router.push(`/applications/${result.data.id}`);
+        })
+      }
+    >
+      <SendIcon data-icon="inline-start" aria-hidden />
+      {pending ? "نجهّز..." : "جهّز الطلب"}
     </Button>
   );
 }

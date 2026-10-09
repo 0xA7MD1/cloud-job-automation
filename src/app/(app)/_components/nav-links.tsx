@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/dashboard", label: "الرئيسية" },
   { href: "/chat", label: "الشات" },
   { href: "/jobs", label: "الوظائف" },
+  { href: "/applications", label: "الطلبات" },
   { href: "/files", label: "ملفاتي" },
   { href: "/profile", label: "ملفي" },
   { href: "/settings/keys", label: "المفاتيح" },
