@@ -1,58 +1,149 @@
-# stack — بناء بوت التقديم على الوظائف (الستاك + الخطوات التسع)
+# stack — Job-apply bot
 
-## ينتظر أحمد
-- [ ] 2026-10-09 · عائق · الحسابات ما انسوت للحين. الكود جاهز، لكن ما نقدر نجرّب التسجيل ولا الرفع ولا نطبّق السكيمة قبلها. كل قيمة تنحط في `.env.local` (انسخ `.env.example`): (1) مشروع InsForge، تختار منطقته ⇒ `NEXT_PUBLIC_INSFORGE_URL` و`NEXT_PUBLIC_INSFORGE_ANON_KEY` و`INSFORGE_API_KEY`. (2) مشروع Vercel بنفس منطقة InsForge. (3) مشروع Trigger.dev ⇒ `TRIGGER_PROJECT_REF` و`TRIGGER_SECRET_KEY`. وولّد `BYOK_MASTER_KEY` بالأمر الي تحت.
-- [ ] 2026-10-09 · أمر · `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` — يولّد `BYOK_MASTER_KEY`. حط الناتج في `.env.local` وفي Vercel وTrigger.dev، ولا تلصقه في الشات. لو ضاع، كل مفاتيح المستخدمين المحفوظة تصير غير قابلة للفك.
-- [ ] 2026-10-09 · أمر · `npx @insforge/cli login` ثم `npx @insforge/cli link --project-id <project-id>` — يربط المجلد بالمشروع. بدونه ما نقدر نطبّق السكيمة.
-- [ ] 2026-10-09 · أمر · `npx @insforge/cli db migrations up --all` — يطبّق ملفي `migrations/` (الجداول + RLS + سياسات الملفات). بعد الربط.
-- [ ] 2026-10-09 · أمر · `npx @insforge/cli storage create-bucket user-files --private` — الـbucket الخاص بالملفات. بدونه الرفع يفشل.
-- [ ] 2026-10-09 · أمر · لوحة InsForge ⇒ Authentication: فعّل Google وMicrosoft، وأضف `http://localhost:3000/api/auth/callback` (ورابط Vercel لاحقًا) و`http://localhost:3000/sign-in` و`http://localhost:3000/reset-password` لقائمة روابط الرجوع المسموحة. بدونها أزرار Google/Microsoft وروابط التحقق ترجع خطأ.
-- [ ] 2026-10-09 · أمر · `npx trigger.dev@latest login` — بعد إنشاء مشروع Trigger.dev. بدونه ما تشتغل `pnpm trigger:dev`.
-- [x] 2026-10-09 · قرار · كيف توصل لـ500 تقديم شهريًا مجانًا ومتجدد؟ (أ) متصفح محلي على جهاز أحمد عبر `pnpm trigger:dev`، ولا (ب) Steel مستضاف على Oracle Always Free؟ → **(أ)** (أحمد بالشات، 2026-10-09). «متصفح محلي» مزود ثاني ورا نفس واجهة المتصفح في الخطوة 8، للمالك بس. والمستخدمين الثانيين على Steel بمفاتيحهم. (ب) خيار لاحق لو احتاج يشتغل والجهاز طافي.
-- [x] 2026-10-09 · قرار · ننفّذ الخطوات 4–6 الحين؟ → **نعم** (أحمد بالشات، 2026-10-09)
-- [ ] 2026-10-09 · قرار · المتصفح الاحتياطي: Browserbase (المكتوب حاليًا في `AGENTS.md`) ولا Browser Use Cloud؟ ميزة Browserbase الأساسية Stagehand، وStagehand يشتغل على أي متصفح CDP. والكابتشا والتخفّي في Browserbase تحتاج $20 شهريًا لكل مستخدم. **ترشيحي: Browser Use** للمواقع الي تحجب Steel، بعد مراجعة شروط استخدامه لمنصات SaaS. مرحلة لاحقة، ما يوقف شي.
-- [x] 2026-10-09 · قرار · كل شي على خدمة وحدة ولا نوزّع على أكثر من حد مجاني؟ → **نوزّع بس لما الفصل يستاهل**. InsForge للقاعدة والتوثيق والملفات، وTrigger.dev للشغل الخلفي (أحمد بالشات، 2026-10-09)
-- [x] 2026-10-09 · قرار · الملفات في R2 ولا InsForge Storage؟ → **InsForge Storage** (أحمد بالشات، 2026-10-09)
-- [x] 2026-10-09 · قرار · المتصفح السحابي؟ → **Steel أساسي** (أحمد بالشات، 2026-10-09)
-- [x] 2026-10-09 · قرار · تقسيم البناء؟ → **9 خطوات متساوية التعقيد**، وننفّذ 1–3 الحين (أحمد بالشات، 2026-10-09)
+**Status:** all 9 build steps are done and committed.
+**Missing:** your accounts and keys. Nothing has run against real services yet.
 
-## الخطوات التسع (كل وحدة ~11% من المشروع)
-1. [x] **الأساس:** Next.js 16 + TS strict + pnpm + Tailwind/shadcn RTL + خط عربي + قراءة env بـZod + إعداد Trigger.dev ومهمة فحص + Vitest + سكربتات الفحص.
-2. [x] **القاعدة:** كل الجداول + RLS + صلاحيات الأعمدة + دالة حصة التقديم الشهرية + أنواع TS + عملاء InsForge الثلاثة.
-3. [x] **التوثيق والملفات:** بريد + Google + Microsoft + تحقق البريد + استرجاع كلمة المرور + proxy يجدّد الجلسة + غلاف التطبيق المحمي؛ bucket خاص + سياساته + رفع مباشر من المتصفح + قائمة الملفات + تنزيل برابط مؤقت + حذف.
-4. [x] **المفاتيح والملف الشخصي:** تشفير BYOK + صفحة المفاتيح (آخر 4 أحرف) + فحص صلاحية المفتاح؛ الملف الشخصي + بنك الإجابات + التفضيلات؛ عدّاد الحصة الشهرية.
-5. [x] **الشات والبحث عن الشركات:** مسار شات AI SDK 7 بمفتاح المستخدم + حفظ المحادثات + واجهة الشات + أداة `searchCompanies` (Tavily/Exa) + حفظ نتائج البحث.
-6. [x] **الوظائف الرسمية:** عملاء Greenhouse/Lever/Ashby + اكتشاف صفحة careers + أداة `searchOfficialJobs` + جدول وظائف مشترك بلا تكرار + صفحة الوظائف + متابعة الشركات + جدول Trigger.dev للفحص الدوري.
-7. [ ] **تجهيز الطلب:** جلب أسئلة نموذج التقديم + إجابات بالذكاء من بنك الإجابات + cover letter + توليد docx/PDF في Trigger.dev + صفحة مراجعة واعتماد + مسودات بريد/واتساب.
-8. [ ] **محرّك التقديم:** واجهة مزود متصفح (Steel للمستخدمين، و«محلي» للمالك) + مهمة التقديم + حماية الإرسال المكرر + حفظ الدليل + محوّل Greenhouse + الحالة الحية.
-9. [ ] **التوسّع والإطلاق:** محوّلا Lever وAshby + التدخل البشري (`needs_user` + البث الحي للمالك) + لوحة الطلبات + تجربة على وظائف حقيقية + النشر على Vercel وTrigger.dev.
+---
 
-## التسليم
-**تم (الخطوات 1–6)، كل خطوة بكوميت:**
-- **1–3:** الهيكل، السكيمة + RLS، التوثيق (بريد/Google/Microsoft)، الملفات الخاصة.
-- **4:** `src/lib/byok/`: تشفير AES-256-GCM مربوط بالمستخدم والمزود (AAD)، تحقق حي من المفتاح عند كل مزود (المفتاح في الهيدر دائمًا)، صفحة `/settings/keys`، اختيار النموذج والمزود الافتراضي، وخيار كابتشا Steel. `/profile`: البيانات + بنك الإجابات + التفضيلات (`src/lib/profile.ts` هو المخطط). الرئيسية: قائمة التجهيز + عدّاد الحصة.
-- **5:** `/api/chat` (AI SDK 7: `streamText` + `toUIMessageStream` + `createUIMessageStreamResponse`)، المحادثات في `chats`/`messages`، أدوات `searchCompanies` و`listRecentSearches` و`getSearchResults` (`src/lib/chat/`). البحث في `src/lib/search/` (Tavily/Exa، يستبعد مواقع التوظيف).
-- **6:** `src/lib/jobs/`: عملاء Greenhouse/Lever/Ashby، اكتشاف النظام من موقع الشركة ثم التخمين من النطاق (بشرط إن الوظائف تذكر الشركة)، مزامنة للجدول المشترك وإقفال الوظائف المختفية. أدوات `searchOfficialJobs` و`followCompany`. صفحة `/jobs`. migration جديد `20261009130000_user-companies.sql`. `trigger/scan-jobs.ts`: جدول كل 12 ساعة يوزّع مهمة لكل شركة متابَعة.
-- **تحقّقت:** `pnpm check` (lint + typecheck + 76 اختبار) و`pnpm build` ناجحة. السكيمة (3 ملفات) تنطبق على PGlite وتجتاز اختبارات RLS. مهام Trigger تنحزم بـesbuild بدون كود Next. اختبار حي على 4 شركات حقيقية: Stripe ⇒ Greenhouse (727 وظيفة)، Ramp ⇒ Ashby، Palantir ⇒ Lever، Notion ⇒ Ashby.
-- **ما انجرّب فعليًا:** أي شي يحتاج InsForge أو مفاتيح: التسجيل، الرفع، حفظ المفاتيح، الشات، الحفظ في القاعدة، تشغيل Trigger.dev.
+## Waiting on Ahmed (do in this order)
 
-**باقي (بالترتيب):**
-1. أحمد ينفّذ البنود فوق (الحسابات، الربط، `db migrations up --all` يطبّق الملفات الثلاثة، الـbucket، مزودي OAuth).
-2. تجربة يدوية: تسجيل ⇒ رفع CV ⇒ مفتاح Groq + Tavily ⇒ الملف الشخصي ⇒ شات «شركات تقنية مالية في الرياض» ⇒ «وظائفهم الرسمية» ⇒ حفظ/متابعة ⇒ `/jobs`. ثم `pnpm trigger:dev` وتشغيل `scan-followed-companies` يدويًا من لوحة Trigger.dev.
-3. الخطوة 7.
+### 1. Accounts  `[blocker]`
+- [ ] Create an **InsForge** project. Copy the 3 values into `.env.local`:
+  - `NEXT_PUBLIC_INSFORGE_URL`
+  - `NEXT_PUBLIC_INSFORGE_ANON_KEY`
+  - `INSFORGE_API_KEY`
+- [ ] Create a **Trigger.dev** project. Copy into `.env.local`:
+  - `TRIGGER_PROJECT_REF` (starts with `proj_`)
+  - `TRIGGER_SECRET_KEY` (use the **dev** key, starts with `tr_dev_`)
+- [ ] Start from `.env.example`:
 
-**لازم تعرفه:**
-- **Next.js 16.4 مو الي تعرفه:** `cacheComponents` مفعّل. أي قراءة لـ`cookies()` أو `searchParams` أو `params` أو `usePathname()` في مسار ديناميكي لازم تكون داخل `<Suspense>`، وأي قيمة عشوائية وقت العرض (مثل `useChat` بدون `id`) تكسر البناء. `pnpm build` يمسكها كلها، فشغّله بعد أي صفحة جديدة. و`middleware.ts` صار `proxy.ts`.
-- **React 19 يصفّر النموذج بعد `<form action>`:** الملف الشخصي يستخدم `onSubmit` + `startTransition` عشان القيم تبقى بعد الحفظ.
-- **InsForge:** `auth.uid()` يرجع uuid. سياسات `storage.objects` **مرفوضة افتراضيًا** في المشاريع الجديدة، وعمود المسار `key`، والمالك `uploaded_by` (نص). مسار كل ملف يبدأ بـ`<user_id>/`.
-- **صلاحيات الأعمدة:** `provider_keys` بدون SELECT على `ciphertext`/`iv`/`auth_tag` للمستخدم (اذكر الأعمدة، لا `select("*")`)، والقراءة السرية عبر `getProviderSecret` بعميل الأدمن. `applications`: المستخدم يعدّل الإجابات والملفات بس. `messages` بدون UPDATE: الحفظ بـ`upsert(..., { ignoreDuplicates: true })` بس (مختبر).
-- **الحصة الشهرية:** `monthly_apply_usage()` تعدّ `submit_attempted` في `application_events` من بداية الشهر (UTC). الحد الافتراضي 500، ويتغيّر من `entitlements` (الأدمن بس).
-- **الجداول المشتركة** (`companies`، `jobs`): الكتابة بعميل الأدمن بس (`src/lib/insforge/admin.ts`). المزامنة تُعاد بعد 6 ساعات (`FRESH_FOR_MS`)، وقبلها نقرأ من القاعدة.
-- **نموذج الشات لازم يدعم الأدوات.** الخطأ 400 من المزود يطلع للمستخدم «جرّب نموذج ثاني». النماذج المقترحة في `src/lib/byok/providers.ts` تخمين: القائمة الحقيقية تنحفظ من المزود وقت التحقق.
-- **التحقق من مفتاح Exa يستهلك بحث واحد** (ما عندهم طريقة مجانية).
-- **كل `fetch` بمهلة:** أي رد ما نقرأه لازم `discardBody()` من `src/lib/http.ts`، وإلا المهلة تطلع لاحقًا كخطأ غير ملتقط يطيّح العملية (صار في الاختبار الحي وانحل).
-- **تكلفة الفحص الدوري:** تشغيل Micro لكل شركة متابَعة مرتين باليوم من حصة Trigger.dev ($5). 100 شركة ≈ $3 شهريًا. لو زاد: خفّف الجدول ليوم. على جهاز أحمد (`trigger:dev`) ما ينحسب.
-- **صفحات careers بدون Greenhouse/Lever/Ashby** (Workday وغيرها) ما نقرأ وظائفها للحين: نرجّع رابط الصفحة. Firecrawl مرحلة لاحقة.
-- **ملفات الـmigration:** الـCLI يرسل الملف كامل. لو فشل تقسيم الجمل عند `$$`، طبّقه بـ`npx @insforge/cli db query` جملة جملة.
-- `vercel.json` ما انكتب: ينتظر منطقة InsForge.
-- إعادة الاتصال بجلسة Steel بعد الانقطاع **مو موثّقة**. وخيارات `solveCaptcha`/`stealthConfig`/`useProxy` اقرأ قيمها من مرجع `steel-sdk` قبل الخطوة 8.
+```bash
+cp .env.example .env.local
+```
+
+### 2. Encryption key
+- [ ] Run this, paste the output into `.env.local` as `BYOK_MASTER_KEY`.
+- (Never paste it in chat. If lost, all saved user keys become unreadable.)
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
+### 3. Database + storage
+- [ ] Log in and link this folder:
+
+```bash
+npx @insforge/cli login
+```
+
+```bash
+npx @insforge/cli link --project-id <project-id>
+```
+
+- [ ] Apply the schema (4 files in `migrations/`):
+
+```bash
+npx @insforge/cli db migrations up --all
+```
+
+- [ ] Create the private file bucket:
+
+```bash
+npx @insforge/cli storage create-bucket user-files --private
+```
+
+### 4. Sign-in providers (InsForge dashboard → Authentication)
+- [ ] Turn on **Google** and **Microsoft**.
+- [ ] Add these 3 redirect URLs:
+  - `http://localhost:3000/api/auth/callback`
+  - `http://localhost:3000/sign-in`
+  - `http://localhost:3000/reset-password`
+
+### 5. Run it on your PC (2 terminals)
+- [ ] Trigger.dev login (once):
+
+```bash
+npx trigger.dev@latest login
+```
+
+- [ ] Terminal 1:
+
+```bash
+pnpm dev
+```
+
+- [ ] Terminal 2 (keep it running: your applications run here, free):
+
+```bash
+pnpm trigger:dev
+```
+
+### 6. Make your account the owner (once, after you sign up in the app)
+- [ ] Replace `<your-email>` and run:
+
+```bash
+npx @insforge/cli db query "insert into public.entitlements (user_id, plan, monthly_apply_limit) select id, 'owner', 500 from auth.users where email = '<your-email>' on conflict (user_id) do update set plan = 'owner'"
+```
+
+- (Owner = your applications use Chrome on your PC. Free, no Steel.)
+
+### 7. First test (open `http://localhost:3000`, pages in order)
+1. `/sign-up` → create your account.
+2. `/files` → upload your CV.
+3. `/profile` → choose it as default CV + fill details, answer bank, target roles.
+4. `/settings/keys` → add a free Groq key + a free Tavily key.
+5. `/chat` → type `fintech companies in Riyadh` → open one company's official jobs.
+6. `/jobs` → press the prepare button on one job.
+7. `/applications` → open it → review answers + cover letter (PDF / Word).
+8. Pick a job you really want → press submit → confirm → watch the Chrome window.
+9. If it stops (captcha / email code / missing field): finish it in that window. It continues by itself.
+
+### 8. Go online (later, when you want it on the internet)
+- [ ] Tell the agent your InsForge region (it writes `vercel.json` with the same region).
+- [ ] Vercel → Environment Variables:
+  - `NEXT_PUBLIC_APP_URL` (your Vercel URL)
+  - `NEXT_PUBLIC_INSFORGE_URL`, `NEXT_PUBLIC_INSFORGE_ANON_KEY`, `INSFORGE_API_KEY`
+  - `BYOK_MASTER_KEY` (same value as local)
+  - `TRIGGER_SECRET_KEY` (the **prod** key `tr_prod_...`)
+  - `TRIGGER_OWNER_SECRET_KEY` (the **dev** key `tr_dev_...` → your applications still run on your PC)
+- [ ] Trigger.dev dashboard → Production env vars: `NEXT_PUBLIC_INSFORGE_URL`, `INSFORGE_API_KEY`, `BYOK_MASTER_KEY`
+- [ ] Deploy the background tasks:
+
+```bash
+pnpm trigger:deploy
+```
+
+- [ ] InsForge redirect URLs: add the same 3 paths with your Vercel domain.
+
+---
+
+## Open decision
+- [ ] **Backup browser** (for sites that block Steel): Browser Use or Browserbase?
+  - **Recommendation: Browser Use** (Browserbase needs $20/month per user for captcha + stealth).
+  - Not urgent. Nothing is blocked by it.
+
+## Closed decisions
+- [x] Free 500/month for owner → local Chrome via `pnpm trigger:dev` (2026-10-09)
+- [x] Build steps 4–6, then 7–9 → done (2026-10-09)
+- [x] Services split only when worth it: InsForge (DB/auth/files) + Trigger.dev (background) (2026-10-09)
+- [x] Files in InsForge Storage, not R2 (2026-10-09)
+- [x] Cloud browser for users: Steel (2026-10-09)
+- [x] Hub file in English, short points only (2026-10-09)
+
+---
+
+## Notes for the next agent
+- **Done:** steps 1–9 (commits `df5a74a` … `a2041e5`). 100 tests + `pnpm build` pass.
+- **Verified live (no real submit):** form filling on real Greenhouse (Discord), Lever (Palantir), Ashby (Notion) with fake data, `skipFiles: true`, submit never clicked. Arabic PDF shaping/RTL checked visually.
+- **Not verified:** anything needing InsForge / Trigger.dev / Steel / AI keys; a real submission.
+- **Next:** help Ahmed through the list above, then fix what the first real run shows.
+- **Traps:**
+  - Next 16 `cacheComponents`: `cookies()` / `params` / `searchParams` / `usePathname()` only inside `<Suspense>`. Run `pnpm build` after any new page.
+  - Greenhouse hydrates late and wipes typed values → adapters call `settle()` and re-check every field.
+  - Never retry a submit. `submit_attempted_at` is set atomically before the click (quota counts it).
+  - Steel live URL: only via `/api/applications/[id]/live`, never stored or logged. Session id = `liveSessionId(appId, runId)`.
+  - Ashby questions come from an undocumented GraphQL → falls back to basic fields if it changes.
+  - `trigger.config.ts`: `playwright-core` and `@react-pdf/renderer` are external; fonts copied by `additionalFiles`.
+  - Every `fetch` has a timeout; unread bodies → `discardBody()`.
+  - Do not run `python` on this machine (Windows Store stub hangs).
+  - Adapter changes: test on a real form with fake data, `skipFiles: true`, no `submit()`.
