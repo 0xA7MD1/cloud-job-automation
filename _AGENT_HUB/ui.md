@@ -6,16 +6,22 @@
 ## Handoff
 **Done:**
 1. Phase 1 (2026-10-10): `next-themes` mounted (dark default), IBM Plex Sans Arabic, tokens (`--stage`, `--hairline`, cta/glass vars), `Button` variants `cta` / `glass` + size `icon-pill` + `<CtaIcon />`, `ThemeToggle` (`src/components/theme-toggle.tsx`). Toasts monochrome (no `richColors`; error icon red).
-2. Installed: shadcn `sidebar sheet tooltip accordion` (+ `src/hooks/use-mobile.ts`), Magic UI `dot-pattern marquee border-beam blur-fade animated-list animated-shiny-text animated-theme-toggler progressive-blur shine-border`. New dep: `motion`.
+2. Installed: shadcn `sidebar sheet tooltip accordion` (+ `src/hooks/use-mobile.ts`), Magic UI `dot-pattern marquee border-beam blur-fade animated-shiny-text animated-theme-toggler progressive-blur shine-border`. New dep: `motion`.
+3. Phase 2 (2026-10-10): landing in `src/app/(marketing)/` (header, hero + product mock, works with, how it works, `#watch` demo, features bento, security, FAQ, final CTA, footer). `/` static (`○`, footer year via `"use cache"` + `cacheLife("days")`). No overflow at 360/390.
 
-**Remaining:** phases 2 → 4. After each: `pnpm check`, `pnpm build`, screenshots, update this section.
+**Remaining:** phases 3 → 4. After each: `pnpm check`, `pnpm build`, screenshots, update this section.
 
 **Need to know:**
 1. `package.json` has another session's uncommitted `seed:demo` scripts → commit only the `motion` line (stage a HEAD copy + that line with `git update-index --cacheinfo`, then `git commit` without paths).
 2. `AGENTS.md` has another session's uncommitted edits → the tools-row line for `motion` + Magic UI is NOT added yet. Add it once their edits are committed.
 3. Rewrote vendored code: `dot-pattern` (CSS background, no JS, server-rendered), `use-mobile` (`useSyncExternalStore`, lint rule), theme toggler (icons from `html.dark` CSS, reduced motion, Arabic label).
 4. `pnpm build` works while `pnpm dev` runs (dev writes to `.next/dev`).
-5. Skipped: Launch UI (viewed only), `navigation-menu`, `@lucide-animated/*`, `light-rays`, `bento-grid` (adds `@radix-ui/react-icons`).
+5. Skipped: Launch UI (viewed only), `navigation-menu`, `@lucide-animated/*`, `light-rays`, `bento-grid` (adds `@radix-ui/react-icons`), `safari` (fixed-ratio SVG, image/video only → built `browser-frame.tsx` in its style), `animated-list` (removed: empty card on mobile → `#watch` shows all steps and lights them up).
+6. Default theme is dark even when the OS is light (brief). Screenshots of light mode need `localStorage.theme = "light"`.
+7. Chrome extension not connected → screenshots via `playwright-core` + local Chrome (headless). Script pattern: `chromium.launch({ channel: "chrome" })`.
+8. Marquee wrapper is `dir="ltr"` (its keyframes translate left; RTL would leave a gap).
+9. Responsive grids need `grid-cols-1` as base (implicit tracks grow to content → horizontal scroll).
+10. Shared app nav (labels + icons + groups): `src/components/app-nav.ts` (plain module, usable from server components).
 
 ---
 
