@@ -34,7 +34,7 @@ Keep both running: the app (`pnpm dev`) and the worker tab (`pnpm trigger:dev`).
 pnpm trigger:deploy
 ```
 
-- [ ] Tell the agent your Vercel domain → it adds the 3 redirect URLs to `insforge.toml` and applies them.
+- [x] Vercel redirect URLs for `https://cloud-job-automation.vercel.app` added to `insforge.toml` and applied (2026-10-13). New domain later → add its 3 URLs the same way.
 
 ---
 
