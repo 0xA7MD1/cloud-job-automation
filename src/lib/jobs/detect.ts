@@ -42,7 +42,17 @@ const MAX_HTML_BYTES = 1_500_000;
 
 /** يجيب صفحة HTML عامة بحدود (وقت وحجم). https بس، وبدون منافذ مخصصة. */
 async function fetchPage(url: string): Promise<string | null> {
-  const parsed = new URL(url);
+  return (await fetchHtmlPage(url))?.html ?? null;
+}
+
+/** مثل fetchPage، ويرجّع الرابط النهائي بعد التحويلات (للروابط النسبية داخل الصفحة) */
+export async function fetchHtmlPage(url: string): Promise<{ url: string; html: string } | null> {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
   if (parsed.protocol !== "https:" || parsed.port) return null;
   try {
     const response = await fetch(parsed, {
@@ -66,7 +76,7 @@ async function fetchPage(url: string): Promise<string | null> {
       size += value.byteLength;
     }
     await reader.cancel().catch(() => undefined);
-    return new TextDecoder().decode(Buffer.concat(chunks));
+    return { url: response.url || parsed.toString(), html: new TextDecoder().decode(Buffer.concat(chunks)) };
   } catch {
     return null;
   }

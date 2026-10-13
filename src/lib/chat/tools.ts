@@ -4,7 +4,7 @@ import { SEARCH_PROVIDERS } from "@/lib/byok/providers";
 import { getFirstProviderSecret } from "@/lib/byok/store";
 import type { Company } from "@/lib/db/types";
 import { getInsForgeAdminClient } from "@/lib/insforge/admin";
-import { SearchProviderError, searchCompanies, type CompanySearchProvider } from "@/lib/search/companies";
+import { searchCompanies, searchErrorMessage, type CompanySearchProvider } from "@/lib/search/companies";
 import { createJobTools } from "./job-tools";
 
 // أدوات الشات. ما فيه أداة إرسال طلب (قاعدة 8): الإرسال يبدأ من الواجهة بتأكيد المستخدم.
@@ -28,17 +28,6 @@ export interface CompanyResult {
 }
 
 export type ToolFailure = { ok: false; error: string };
-
-function searchErrorMessage(error: unknown): string {
-  if (error instanceof SearchProviderError) {
-    if (error.status === 401 || error.status === 403) return `مفتاح ${error.provider} مرفوض. حدّثه من صفحة المفاتيح.`;
-    if (error.status === 429 || error.status === 432 || error.status === 402) {
-      return `وصلت حد ${error.provider}. انتظر أو أضف مفتاح بحث ثاني.`;
-    }
-    return `${error.provider} ما رد. جرّب بعد شوي.`;
-  }
-  return "صار خطأ في البحث.";
-}
 
 export function createChatTools(ctx: ChatToolContext) {
   return {

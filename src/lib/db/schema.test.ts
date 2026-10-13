@@ -101,6 +101,15 @@ describe("provider_keys", () => {
   });
 });
 
+describe("provider list", () => {
+  it("accepts a Google Places key and rejects unknown providers", async () => {
+    const insert = (provider: string) =>
+      as(B, `insert into public.provider_keys (provider, ciphertext, iv, auth_tag, last4) values ('${provider}', 'c', 'i', 't', 'abcd')`);
+    expect((await insert("google_places")).error).toBeUndefined();
+    expect((await insert("bing")).error).toBeDefined();
+  });
+});
+
 describe("files and storage", () => {
   it("keeps every object inside the owner's folder", async () => {
     expect(
@@ -209,6 +218,17 @@ describe("applications and quota", () => {
       expect((await as(A, `update public.applications set ${column} where id = '${appId}'`)).error).toBeDefined();
     }
     expect((await as(B, `update public.applications set cover_letter_text = 'x' where id = '${appId}' returning id`)).rows).toEqual([]);
+  });
+
+  it("auto submit and needs_input are server-side only", async () => {
+    expect((await as(A, `update public.applications set auto_submit = true where id = '${appId}'`)).error).toBeDefined();
+    expect(
+      (await as(A, `insert into public.applications (job_id, auto_submit) values ('${JOB}', true)`)).error,
+    ).toBeDefined();
+    await db.exec(`update public.applications set status = 'needs_input', auto_submit = true where id = '${appId}'`);
+    const r = await as(A, `select status, auto_submit from public.applications where id = '${appId}'`);
+    expect(r.rows?.[0]).toMatchObject({ status: "needs_input", auto_submit: true });
+    await expect(db.exec(`update public.applications set status = 'bogus' where id = '${appId}'`)).rejects.toThrow();
   });
 
   it("exposes user emails to the admin only", async () => {

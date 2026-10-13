@@ -62,6 +62,17 @@ describe("runSubmission", () => {
     expect(a.submit).not.toHaveBeenCalled();
   });
 
+  it("in an unattended batch, stops before submit when a required field could not be filled", async () => {
+    const a = adapter({ fill: { filled: [], skipped: [{ key: "q", label: "Visa?", required: true, reason: "option not found" }] } });
+    const h = hooks();
+    const result = await runSubmission(page, a, plan, h, { unattended: true });
+    expect(result).toMatchObject({ status: "failed", attempted: false });
+    if (result.status === "failed") expect(result.error).toContain("Visa?");
+    expect(h.markSubmitAttempted).not.toHaveBeenCalled();
+    expect(h.waitForUser).not.toHaveBeenCalled();
+    expect(a.submit).not.toHaveBeenCalled();
+  });
+
   it("waits for the user on a captcha and reports a possible submission on timeout", async () => {
     const a = adapter({ outcomes: [{ kind: "captcha" }] });
     const h = hooks();

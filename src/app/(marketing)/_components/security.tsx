@@ -1,5 +1,4 @@
 import { EyeOffIcon, HandIcon, LockKeyholeIcon, MonitorPlayIcon, RotateCcwIcon, type LucideIcon } from "lucide-react";
-import { BlurFade } from "@/components/ui/blur-fade";
 import { SectionHeading } from "./section-heading";
 
 // كل بند هنا قاعدة مطبّقة في الكود (AGENTS.md: تصميم التقديم + الأسرار)
@@ -35,27 +34,23 @@ export function Security() {
   return (
     <section id="security" aria-labelledby="security-title" className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
       <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-16">
-        <div className="self-start lg:sticky lg:top-32">
-          <BlurFade inView direction="up">
-            <SectionHeading
-              id="security-title"
-              align="start"
-              eyebrow="الأمان"
-              title="أنت المتحكّم"
-              description="يقدّم عنك، بس ما يتصرف من وراك. هذي قواعد ثابتة في النظام، مو إعدادات تنسى تفعّلها."
-            />
-          </BlurFade>
+        <div className="self-start">
+          <SectionHeading
+            id="security-title"
+            align="start"
+            eyebrow="الأمان"
+            title="أنت المتحكّم"
+            description="يقدّم عنك، بس ما يتصرف من وراك. هذي قواعد ثابتة في النظام، مو إعدادات تنسى تفعّلها."
+          />
         </div>
         <ul className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-hairline bg-hairline sm:grid-cols-2">
           {ITEMS.map(({ icon: Icon, title, body }, i) => (
             <li key={title} className={i === ITEMS.length - 1 ? "sm:col-span-2" : undefined}>
-              <BlurFade inView direction="up" delay={0.05 * i} className="h-full">
-                <div className="flex h-full flex-col gap-3 bg-background p-6">
-                  <Icon className="size-5 text-muted-foreground" aria-hidden />
-                  <h3 className="font-semibold">{title}</h3>
-                  <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
-                </div>
-              </BlurFade>
+              <div data-reveal className="flex h-full flex-col gap-3 bg-background p-6">
+                <Icon className="size-5 text-muted-foreground" aria-hidden />
+                <h3 className="font-semibold">{title}</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
+              </div>
             </li>
           ))}
         </ul>

@@ -2,7 +2,7 @@ import type { Provider } from "@/lib/db/types";
 
 // كتالوج المزودين. آمن للمتصفح: ما فيه أي سر.
 
-export type ProviderKind = "ai" | "search" | "browser";
+export type ProviderKind = "ai" | "search" | "browser" | "places";
 
 export interface ProviderInfo {
   label: string;
@@ -65,6 +65,12 @@ export const PROVIDER_INFO: Record<Provider, ProviderInfo> = {
     kind: "browser",
     keyUrl: "https://app.steel.dev/settings/api-keys",
     note: "للتقديم الفعلي. حل الكابتشا يحتاج إيداع $10 مرة وحدة في حسابك عند Steel.",
+  },
+  google_places: {
+    label: "Google Places",
+    kind: "places",
+    keyUrl: "https://console.cloud.google.com/google/maps-apis/credentials",
+    note: "فعّل «Places API (New)» في مشروعك عند Google. 1000 بحث مجاني شهريًا، وكل بحث يرجّع حتى 20 شركة.",
   },
 };
 

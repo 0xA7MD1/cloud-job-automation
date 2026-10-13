@@ -27,6 +27,18 @@ export class SearchProviderError extends Error {
 
 const TIMEOUT_MS = 15_000;
 
+/** رسالة للمستخدم من خطأ مزود البحث */
+export function searchErrorMessage(error: unknown): string {
+  if (error instanceof SearchProviderError) {
+    if (error.status === 401 || error.status === 403) return `مفتاح ${error.provider} مرفوض. حدّثه من صفحة المفاتيح.`;
+    if (error.status === 429 || error.status === 432 || error.status === 402) {
+      return `وصلت حد ${error.provider}. انتظر أو أضف مفتاح بحث ثاني.`;
+    }
+    return `${error.provider} ما رد. جرّب بعد شوي.`;
+  }
+  return "صار خطأ في البحث.";
+}
+
 function buildQuery({ query, location }: CompanySearchInput): string {
   return [query.trim(), location?.trim() ? `in ${location.trim()}` : "", "company official website"]
     .filter(Boolean)
@@ -62,7 +74,8 @@ export function toCandidates(results: RawResult[], limit: number): CompanyCandid
   return out;
 }
 
-async function post(url: string, headers: Record<string, string>, body: unknown, provider: CompanySearchProvider) {
+/** طلب POST لمزود البحث بمهلة. المفتاح في الهيدر بس. */
+export async function post(url: string, headers: Record<string, string>, body: unknown, provider: CompanySearchProvider) {
   let response: Response;
   try {
     response = await fetch(url, {

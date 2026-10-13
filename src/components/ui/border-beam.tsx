@@ -1,53 +1,26 @@
-"use client"
-
-import { motion, type MotionStyle, type Transition } from "motion/react"
+import type { CSSProperties } from "react"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * شعاع يمشي على حدود العنصر (مبني على Magic UI border-beam).
+ * الأصل يحرّك offset-distance بـmotion (JS كل فريم)؛ هنا keyframes في CSS (globals.css: border-beam)
+ * ⇒ بدون مكتبة ولا شغل على الـmain thread. «تقليل الحركة» يوقفه من globals.css.
+ */
 interface BorderBeamProps {
-  /**
-   * The size of the border beam.
-   */
+  /** طول الشعاع بالبكسل */
   size?: number
-  /**
-   * The duration of the border beam.
-   */
+  /** مدة اللفة بالثواني */
   duration?: number
-  /**
-   * The delay of the border beam.
-   */
+  /** تأخير البداية بالثواني */
   delay?: number
-  /**
-   * The color of the border beam from.
-   */
   colorFrom?: string
-  /**
-   * The color of the border beam to.
-   */
   colorTo?: string
-  /**
-   * The motion transition of the border beam.
-   */
-  transition?: Transition
-  /**
-   * The class name of the border beam.
-   */
   className?: string
-  /**
-   * The style of the border beam.
-   */
-  style?: React.CSSProperties
-  /**
-   * Whether to reverse the animation direction.
-   */
+  style?: CSSProperties
   reverse?: boolean
-  /**
-   * The initial offset position (0-100).
-   */
+  /** نقطة البداية (0-100) */
   initialOffset?: number
-  /**
-   * The border width of the beam.
-   */
   borderWidth?: number
 }
 
@@ -58,7 +31,6 @@ export const BorderBeam = ({
   duration = 6,
   colorFrom = "#ffaa40",
   colorTo = "#9c40ff",
-  transition,
   style,
   reverse = false,
   initialOffset = 0,
@@ -70,12 +42,13 @@ export const BorderBeam = ({
       style={
         {
           "--border-beam-width": `${borderWidth}px`,
-        } as React.CSSProperties
+        } as CSSProperties
       }
     >
-      <motion.div
+      <div
         className={cn(
-          "absolute aspect-square",
+          // طبقة لحالها: حركة offset-distance تتحدّث كل فريم، والطبقة تتحرك بدون إعادة رسم ما حولها
+          "animate-border-beam absolute aspect-square will-change-transform",
           "bg-linear-to-l from-(--color-from) via-(--color-to) to-transparent",
           className
         )}
@@ -85,22 +58,14 @@ export const BorderBeam = ({
             offsetPath: `rect(0 auto auto 0 round ${size}px)`,
             "--color-from": colorFrom,
             "--color-to": colorTo,
+            "--beam-from": `${initialOffset}%`,
+            "--beam-to": `${100 + initialOffset}%`,
+            animationDuration: `${duration}s`,
+            animationDelay: `${-delay}s`,
+            animationDirection: reverse ? "reverse" : undefined,
             ...style,
-          } as MotionStyle
+          } as CSSProperties
         }
-        initial={{ offsetDistance: `${initialOffset}%` }}
-        animate={{
-          offsetDistance: reverse
-            ? [`${100 - initialOffset}%`, `${-initialOffset}%`]
-            : [`${initialOffset}%`, `${100 + initialOffset}%`],
-        }}
-        transition={{
-          repeat: Infinity,
-          ease: "linear",
-          duration,
-          delay: -delay,
-          ...transition,
-        }}
       />
     </div>
   )

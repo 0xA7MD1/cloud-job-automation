@@ -1,5 +1,3 @@
-"use client"
-
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -23,9 +21,10 @@ interface ShineBorderProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * Shine Border
+ * Shine Border (Magic UI)
  *
- * An animated background border effect component with configurable properties.
+ * الحركة مو افتراضية: الي يستخدمه يضيف motion-safe:animate-shine وقت ما يكون ظاهر بس
+ * (مثل group-hover). حركة background-position تنرسم على الـmain thread كل فريم، حتى لو العنصر شفاف.
  */
 export function ShineBorder({
   borderWidth = 1,
@@ -54,7 +53,7 @@ export function ShineBorder({
         } as React.CSSProperties
       }
       className={cn(
-        "motion-safe:animate-shine pointer-events-none absolute inset-0 size-full rounded-[inherit] will-change-[background-position]",
+        "pointer-events-none absolute inset-0 size-full rounded-[inherit]",
         className
       )}
       {...props}

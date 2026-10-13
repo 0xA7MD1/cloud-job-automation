@@ -6,6 +6,7 @@ import { AtsFetchError, fetchAtsJobs, parseAshby, parseGreenhouse, parseLever } 
 import { detectAtsInHtml } from "./detect";
 import { filterJobs } from "./filter";
 import { htmlToText } from "./html";
+import { parseJobUrl } from "./url";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -97,6 +98,36 @@ describe("detectAtsInHtml", () => {
   it("recognises unsupported systems and plain pages", () => {
     expect(detectAtsInHtml('<a href="https://acme.wd3.myworkdayjobs.com/en-US/careers">')).toEqual({ ats: "workday", slug: null });
     expect(detectAtsInHtml("<p>We are hiring!</p>")).toBeNull();
+  });
+});
+
+describe("parseJobUrl", () => {
+  const replit = "7c3c9d29-cec2-4367-8564-eadaed165aea";
+  it.each([
+    [`https://jobs.ashbyhq.com/replit/${replit}`, { ats: "ashby", slug: "replit", externalId: replit }],
+    [`https://jobs.ashbyhq.com/replit/${replit.toUpperCase()}/application?utm_source=x`, { ats: "ashby", slug: "replit", externalId: replit }],
+    ["https://jobs.ashbyhq.com/Lemon%20Squeezy/" + replit, { ats: "ashby", slug: "Lemon Squeezy", externalId: replit }],
+    [`https://jobs.lever.co/acme-inc/${replit}/apply`, { ats: "lever", slug: "acme-inc", externalId: replit }],
+    ["https://job-boards.greenhouse.io/stripe/jobs/8172508?gh_src=abc", { ats: "greenhouse", slug: "stripe", externalId: "8172508" }],
+    ["https://boards.greenhouse.io/stripe/jobs/8172508", { ats: "greenhouse", slug: "stripe", externalId: "8172508" }],
+    ["https://boards.greenhouse.io/embed/job_app?for=stripe&token=8172508", { ats: "greenhouse", slug: "stripe", externalId: "8172508" }],
+    ["https://stripe.com/jobs/search?gh_jid=8172508", { ats: "greenhouse", domain: "stripe.com", externalId: "8172508" }],
+    [`https://www.acme.ai/careers?ashby_jid=${replit}`, { ats: "ashby", domain: "acme.ai", externalId: replit }],
+  ])("reads %s", (url, expected) => {
+    expect(parseJobUrl(url)).toEqual(expected);
+  });
+
+  it.each([
+    "https://jobs.ashbyhq.com/replit",
+    "https://jobs.ashbyhq.com/replit/not-a-job-id",
+    "https://job-boards.greenhouse.io/stripe",
+    "https://jobs.lever.co/acme/123",
+    "https://www.linkedin.com/jobs/view/123?gh_jid=123",
+    "https://stripe.com/jobs",
+    "javascript:alert(1)",
+    "not a url",
+  ])("ignores %s", (url) => {
+    expect(parseJobUrl(url)).toBeNull();
   });
 });
 

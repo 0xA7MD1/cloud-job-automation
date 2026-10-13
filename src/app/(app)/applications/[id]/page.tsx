@@ -9,8 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { missingRequired, readForm, readStoredAnswers } from "@/lib/apply/form";
+import { blockingMissing } from "@/lib/apply/queue";
 import { ACTIVE_STATUSES, STATUS_LABELS, STATUS_TONE } from "@/lib/apply/labels";
-import { browserProviderFor, monthlyUsage } from "@/lib/apply/service";
+import { browserChoiceFor, monthlyUsage, runsOnOwnerPc } from "@/lib/apply/service";
 import { requireUser } from "@/lib/auth";
 import type { Application, Company, FileRow, Job } from "@/lib/db/types";
 import { formatDateTime } from "@/lib/format";
@@ -28,7 +29,7 @@ type Row = Application & {
   job: Pick<Job, "id" | "title" | "location" | "url" | "closed_at"> & { company: Pick<Company, "name" | "domain"> | null };
 };
 
-const EDITABLE: Application["status"][] = ["draft", "ready", "failed", "cancelled"];
+const EDITABLE: Application["status"][] = ["draft", "needs_input", "ready", "failed", "cancelled"];
 
 export default function ApplicationPage({ params }: PageProps<"/applications/[id]">) {
   return (
@@ -73,14 +74,14 @@ async function ApplicationView({ params }: { params: Promise<{ id: string }> }) 
     fileIds.length
       ? insforge.database.from("files").select("id, file_name, kind").in("id", fileIds)
       : Promise.resolve({ data: [] }),
-    browserProviderFor(insforge, user.id),
+    browserChoiceFor(insforge, user.id),
     monthlyUsage(insforge),
   ]);
-  const owner = browser.owner;
   const docName = new Map(((docs ?? []) as Pick<FileRow, "id" | "file_name">[]).map((f) => [f.id, f.file_name]));
 
   const active = ACTIVE_STATUSES.includes(app.status);
-  const token = active && app.trigger_run_id ? await createRunReadToken(owner, app.trigger_run_id) : null;
+  const token =
+    active && app.trigger_run_id ? await createRunReadToken(runsOnOwnerPc(browser.owner, app), app.trigger_run_id) : null;
 
   const form = readForm(app.form);
   const answers = readStoredAnswers(app.answers);
@@ -88,7 +89,9 @@ async function ApplicationView({ params }: { params: Promise<{ id: string }> }) 
   const missing = form
     ? missingRequired(form, answers, { cv: !!app.cv_file_id, coverLetter: !!app.cover_letter_file_id })
     : [];
+  const blocking = blockingMissing(app).length;
   const outreach = app.outreach as { subject?: string; email?: string; message?: string };
+  const autoWaiting = app.auto_submit && !app.submit_attempted_at && ["preparing", "needs_input", "ready"].includes(app.status);
 
   return (
     <div className="flex flex-col gap-8">
@@ -118,6 +121,20 @@ async function ApplicationView({ params }: { params: Promise<{ id: string }> }) 
 
       {active && (
         <RunWatcher runId={app.trigger_run_id} accessToken={token} fallback={STATUS_LABELS[app.status]} />
+      )}
+
+      {autoWaiting && (
+        <Alert>
+          <AlertCircleIcon aria-hidden />
+          <AlertTitle>من دفعة تقديم تلقائي</AlertTitle>
+          <AlertDescription>
+            {app.status === "needs_input"
+              ? "جاوب الأسئلة الناقصة تحت واحفظ: يتقدّم لحاله مباشرة."
+              : app.status === "preparing"
+                ? "يتقدّم لحاله أول ما يخلص التجهيز، إلا لو ناقصه جوابك."
+                : "ما بدأ إرساله تلقائيًا: شوف السبب فوق، أو اضغط «قدّم الحين»."}
+          </AlertDescription>
+        </Alert>
       )}
 
       {app.error && (
@@ -158,9 +175,9 @@ async function ApplicationView({ params }: { params: Promise<{ id: string }> }) 
         applicationId={app.id}
         canSubmit={!!form && editable && app.status !== "draft"}
         canCancel={active}
-        provider={browser.provider}
-        providerError={"error" in browser ? browser.error : null}
-        missing={missing.length}
+        providers={browser.providers}
+        steelMissing={browser.steelMissing}
+        missing={blocking}
         quota={quota ? { used: quota.used, limit: quota.apply_limit } : null}
       />
 

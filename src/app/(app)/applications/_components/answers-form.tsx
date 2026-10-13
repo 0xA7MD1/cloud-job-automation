@@ -58,7 +58,7 @@ export function AnswersForm({ applicationId, fields, answers, editable }: Props)
         toast.error(result.error);
         return;
       }
-      toast.success("انحفظت الإجابات.");
+      toast.success(result.data.status === "queued" ? "انحفظت، وبدأ التقديم تلقائيًا." : "انحفظت الإجابات.");
       setDirty(false);
       router.refresh();
     });

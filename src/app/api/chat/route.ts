@@ -18,8 +18,8 @@ import type { ChatUIMessage } from "@/lib/chat/types";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
 import { readPreferences } from "@/lib/profile";
 
-// Vercel Hobby يسمح حتى 300 ثانية. البحث + عدة خطوات أدوات تاخذ أقل من دقيقتين عادة.
-export const maxDuration = 120;
+// Vercel Hobby يسمح حتى 300 ثانية: قراءة صفحة توظيف (متصفح + ذكاء) أو بحث بالمسمى في عدة لوحات تاخذ دقيقة أحيانًا.
+export const maxDuration = 300;
 
 const HISTORY_LIMIT = 40;
 
@@ -85,14 +85,29 @@ export async function POST(request: Request) {
   const [{ data: history }, { data: profile }] = await Promise.all([
     insforge.database
       .from("messages")
-      .select("id, role, parts, metadata")
+      .select("id, role, parts, metadata, created_at")
       .eq("chat_id", chatId)
       .order("created_at", { ascending: false })
       .limit(HISTORY_LIMIT),
     insforge.database.from("profiles").select("preferences").eq("user_id", user.id).maybeSingle(),
   ]);
-  // إعادة المحاولة ترسل نفس رسالة المستخدم: لا نكررها في السياق
-  const previous = ((history ?? []) as ChatUIMessage[]).reverse().filter((m) => m.id !== message.id);
+  const stored = ((history ?? []) as (ChatUIMessage & { created_at: string })[]).reverse();
+
+  // إعادة المحاولة / إعادة التوليد ترسل رسالة المستخدم نفسها: الي قبلها سياق، والردود الي بعدها قديمة
+  // تنحذف (لا تدخل السياق ولا ترجع تطلع لما تنفتح المحادثة)
+  const retryIndex = stored.findIndex((m) => m.id === message.id);
+  const retried = stored[retryIndex];
+  if (retried) {
+    await insforge.database
+      .from("messages")
+      .delete()
+      .eq("chat_id", chatId)
+      .eq("user_id", user.id)
+      .gt("created_at", retried.created_at);
+  }
+  const previous: ChatUIMessage[] = (retried ? stored.slice(0, retryIndex) : stored).map(
+    ({ id, role, parts, metadata }) => ({ id, role, parts, metadata }),
+  );
 
   const tools = createChatTools({ userId: user.id, chatId, insforge });
 

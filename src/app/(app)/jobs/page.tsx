@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { BriefcaseBusinessIcon, ExternalLinkIcon } from "lucide-react";
+import { BriefcaseBusinessIcon, ExternalLinkIcon, MailIcon } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { SegmentedNav } from "@/components/segmented-nav";
@@ -10,9 +10,12 @@ import { Button, CtaIcon } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requireUser } from "@/lib/auth";
 import { STATUS_LABELS } from "@/lib/apply/labels";
+import { MAX_BATCH, SUBMITTABLE } from "@/lib/apply/queue";
+import { browserChoiceFor, monthlyUsage } from "@/lib/apply/service";
 import type { Application, Company, Job, UserJob } from "@/lib/db/types";
 import { formatDateTime } from "@/lib/format";
 import { createInsForgeServerClient } from "@/lib/insforge/server";
+import { BulkApplyBar, BulkApplyProvider, JobCheckbox, SelectAllButton } from "./_components/bulk-apply";
 import { FollowButton, JobStatusButtons, PrepareButton } from "./_components/job-buttons";
 
 export const metadata: Metadata = { title: "الوظائف" };
@@ -29,17 +32,44 @@ const SUPPORTED = new Set(["greenhouse", "lever", "ashby"]);
 const WORKPLACE: Record<string, string> = { remote: "عن بعد", hybrid: "هجين", onsite: "من المكتب" };
 
 type Row = Pick<UserJob, "status" | "created_at"> & {
-  job: Pick<Job, "id" | "source" | "title" | "location" | "workplace_type" | "department" | "url" | "posted_at" | "closed_at"> & {
+  job: Pick<Job, "id" | "source" | "title" | "location" | "workplace_type" | "department" | "url" | "posted_at" | "closed_at" | "raw"> & {
     company: Pick<Company, "id" | "name" | "domain"> | null;
   };
 };
+
+/** بريد التوظيف الي ذكرته صفحة الشركة (jobs.raw.applyEmail) */
+function applyEmailOf(raw: Job["raw"]): string | null {
+  const email = raw?.applyEmail;
+  return typeof email === "string" && /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email) ? email : null;
+}
+
+/** وظيفة من صفحة توظيف الشركة: ما نقدّم عليها تلقائيًا، التقديم من موقعهم أو بالبريد */
+function ExternalApply({ url, email }: { url: string; email: string | null }) {
+  return (
+    <div className="flex gap-1">
+      <Button asChild variant="outline" size="sm">
+        <a href={url} target="_blank" rel="noopener noreferrer nofollow">
+          قدّم من موقعهم
+          <ExternalLinkIcon data-icon="inline-end" aria-hidden />
+        </a>
+      </Button>
+      {email && (
+        <Button asChild variant="ghost" size="sm" aria-label={`راسلهم على ${email}`}>
+          <a href={`mailto:${email}`}>
+            <MailIcon aria-hidden />
+          </a>
+        </Button>
+      )}
+    </div>
+  );
+}
 
 export default function JobsPage({ searchParams }: PageProps<"/jobs">) {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
         title="الوظائف"
-        description="من لوحات التوظيف الرسمية للشركات. تنضاف هنا من الشات، ومن فحص الشركات الي تتابعها مرتين باليوم."
+        description="من لوحات التوظيف الرسمية وصفحات التوظيف في مواقع الشركات. حدّد الي تبيها وقدّم عليها كلها بضغطة وحدة."
       >
         <Button asChild variant="cta">
           <Link href="/chat">
@@ -61,11 +91,11 @@ async function JobsSection({ searchParams }: { searchParams: Promise<Record<stri
 
   const user = await requireUser();
   const insforge = await createInsForgeServerClient();
-  const [{ data: rows }, { data: followed }, { data: apps }] = await Promise.all([
+  const [{ data: rows }, { data: followed }, { data: apps }, browser, usage] = await Promise.all([
     insforge.database
       .from("user_jobs")
       .select(
-        "status, created_at, job:jobs(id, source, title, location, workplace_type, department, url, posted_at, closed_at, company:companies(id, name, domain))",
+        "status, created_at, job:jobs(id, source, title, location, workplace_type, department, url, posted_at, closed_at, raw, company:companies(id, name, domain))",
       )
       .eq("user_id", user.id)
       .eq("status", status)
@@ -75,78 +105,106 @@ async function JobsSection({ searchParams }: { searchParams: Promise<Record<stri
       .from("user_companies")
       .select("company:companies(id, name, domain, ats, last_scanned_at)")
       .eq("user_id", user.id),
-    insforge.database.from("applications").select("id, job_id, status").eq("user_id", user.id),
+    insforge.database.from("applications").select("id, job_id, status, submit_attempted_at").eq("user_id", user.id),
+    browserChoiceFor(insforge, user.id),
+    monthlyUsage(insforge),
   ]);
   const appByJob = new Map(
-    ((apps ?? []) as Pick<Application, "id" | "job_id" | "status">[]).map((a) => [a.job_id, a]),
+    ((apps ?? []) as Pick<Application, "id" | "job_id" | "status" | "submit_attempted_at">[]).map((a) => [a.job_id, a]),
   );
 
   const jobs = ((rows ?? []) as unknown as Row[]).filter((r) => r.job);
+  // تدخل الدفعة: مدعومة ومفتوحة، وطلبها (لو موجود) ما انضغط فيه «إرسال» وما هو شغّال
+  const canBatch = (job: Row["job"]) => {
+    if (job.closed_at || !SUPPORTED.has(job.source)) return false;
+    const app = appByJob.get(job.id);
+    return !app || (!app.submit_attempted_at && (app.status === "draft" || SUBMITTABLE.includes(app.status)));
+  };
+  const eligible = status === "dismissed" ? [] : jobs.filter((r) => canBatch(r.job)).map((r) => r.job.id);
   const companies = ((followed ?? []) as unknown as { company: Pick<Company, "id" | "name" | "domain" | "ats" | "last_scanned_at"> | null }[])
     .map((r) => r.company)
     .filter((c): c is NonNullable<typeof c> => !!c);
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_16rem]">
-      <section className="flex flex-col gap-4">
-        <SegmentedNav
-          label="حالة الوظائف"
-          items={TABS.map((tab) => ({ href: `/jobs?status=${tab.status}`, label: tab.label, active: tab.status === status }))}
-        />
+      <BulkApplyProvider key={status} eligible={eligible}>
+        <section className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <SegmentedNav
+              label="حالة الوظائف"
+              items={TABS.map((tab) => ({ href: `/jobs?status=${tab.status}`, label: tab.label, active: tab.status === status }))}
+            />
+            <SelectAllButton />
+          </div>
 
-        {jobs.length === 0 ? (
-          <EmptyState
-            icon={BriefcaseBusinessIcon}
-            action={
-              status === "new" && (
-                <Button asChild variant="glass" size="sm">
-                  <Link href="/chat">افتح الشات</Link>
-                </Button>
-              )
-            }
-          >
-            {status === "new" ? "ما فيه وظائف للحين. اطلبها من الشات." : "ما فيه شي هنا."}
-          </EmptyState>
-        ) : (
-          <ul className="divide-y divide-hairline overflow-hidden rounded-2xl border border-hairline bg-card/50">
-            {jobs.map(({ job, status: jobStatus }) => (
-              <li key={job.id} className="flex flex-wrap items-center gap-3 p-4">
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <a
-                      href={job.url}
-                      target="_blank"
-                      rel="noopener noreferrer nofollow"
-                      className="inline-flex items-center gap-1 font-medium hover:underline"
-                      dir="auto"
-                    >
-                      {job.title}
-                      <ExternalLinkIcon className="size-3.5 text-muted-foreground" aria-hidden />
-                    </a>
-                    {job.closed_at && <Badge variant="outline">انقفلت</Badge>}
-                  </div>
-                  <span className="text-sm text-muted-foreground" dir="auto">
-                    {[job.company?.name, job.location, job.workplace_type ? WORKPLACE[job.workplace_type] : null]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </span>
-                  {job.posted_at && <span className="text-xs text-muted-foreground">نُشرت {formatDateTime(job.posted_at)}</span>}
-                </div>
-                {appByJob.has(job.id) ? (
-                  <Button asChild variant="outline" size="sm">
-                    <Link href={`/applications/${appByJob.get(job.id)!.id}`}>
-                      الطلب: {STATUS_LABELS[appByJob.get(job.id)!.status]}
-                    </Link>
+          {jobs.length === 0 ? (
+            <EmptyState
+              icon={BriefcaseBusinessIcon}
+              action={
+                status === "new" && (
+                  <Button asChild variant="glass" size="sm">
+                    <Link href="/chat">افتح الشات</Link>
                   </Button>
-                ) : (
-                  !job.closed_at && SUPPORTED.has(job.source) && <PrepareButton jobId={job.id} />
-                )}
-                <JobStatusButtons jobId={job.id} status={jobStatus} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                )
+              }
+            >
+              {status === "new" ? "ما فيه وظائف للحين. اطلبها من الشات." : "ما فيه شي هنا."}
+            </EmptyState>
+          ) : (
+            <ul className="divide-y divide-hairline overflow-hidden rounded-2xl border border-hairline bg-card/50">
+              {jobs.map(({ job, status: jobStatus }) => (
+                <li key={job.id} className="flex flex-wrap items-center gap-3 p-4">
+                  {eligible.length > 0 && (
+                    <span className="flex w-5 shrink-0 justify-center">
+                      {eligible.includes(job.id) && <JobCheckbox jobId={job.id} title={job.title} />}
+                    </span>
+                  )}
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <a
+                        href={job.url}
+                        target="_blank"
+                        rel="noopener noreferrer nofollow"
+                        className="inline-flex items-center gap-1 font-medium hover:underline"
+                        dir="auto"
+                      >
+                        {job.title}
+                        <ExternalLinkIcon className="size-3.5 text-muted-foreground" aria-hidden />
+                      </a>
+                      {job.closed_at && <Badge variant="outline">انقفلت</Badge>}
+                      {!SUPPORTED.has(job.source) && <Badge variant="secondary">من موقع الشركة</Badge>}
+                    </div>
+                    <span className="text-sm text-muted-foreground" dir="auto">
+                      {[job.company?.name, job.location, job.workplace_type ? WORKPLACE[job.workplace_type] : null]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                    {job.posted_at && <span className="text-xs text-muted-foreground">نُشرت {formatDateTime(job.posted_at)}</span>}
+                  </div>
+                  {appByJob.has(job.id) ? (
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/applications/${appByJob.get(job.id)!.id}`}>
+                        الطلب: {STATUS_LABELS[appByJob.get(job.id)!.status]}
+                      </Link>
+                    </Button>
+                  ) : SUPPORTED.has(job.source) ? (
+                    !job.closed_at && <PrepareButton jobId={job.id} />
+                  ) : (
+                    !job.closed_at && <ExternalApply url={job.url} email={applyEmailOf(job.raw)} />
+                  )}
+                  <JobStatusButtons jobId={job.id} status={jobStatus} />
+                </li>
+              ))}
+            </ul>
+          )}
+          <BulkApplyBar
+            providers={browser.providers}
+            steelMissing={browser.steelMissing}
+            left={usage ? Math.max(0, usage.apply_limit - usage.used) : null}
+            maxBatch={MAX_BATCH}
+          />
+        </section>
+      </BulkApplyProvider>
 
       <aside className="flex flex-col gap-3">
         <h2 className="font-semibold">شركات تتابعها</h2>

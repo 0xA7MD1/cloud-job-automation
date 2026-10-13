@@ -1,10 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { BellIcon, BriefcaseBusinessIcon, BuildingIcon, ExternalLinkIcon, FileTextIcon, HistoryIcon, Loader2Icon, SearchIcon } from "lucide-react";
+import {
+  BellIcon,
+  BriefcaseBusinessIcon,
+  BuildingIcon,
+  ExternalLinkIcon,
+  FileTextIcon,
+  HistoryIcon,
+  ListChecksIcon,
+  Loader2Icon,
+  MailIcon,
+  MapPinIcon,
+  SearchIcon,
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import type { JobResult } from "@/lib/chat/job-tools";
 import type { ChatUIMessage } from "@/lib/chat/types";
 import { formatDateTime } from "@/lib/format";
 import { FollowButton, JobStatusButtons, PrepareButton } from "../../jobs/_components/job-buttons";
@@ -35,6 +48,50 @@ function Failure({ text }: { text: string }) {
     <Alert variant="destructive">
       <AlertDescription>{text}</AlertDescription>
     </Alert>
+  );
+}
+
+function JobRow({ job, showCompany = false }: { job: JobResult; showCompany?: boolean }) {
+  // نتائج قديمة قبل autoApply كانت كلها من لوحات رسمية
+  const auto = job.autoApply !== false;
+  return (
+    <li className="flex flex-wrap items-center gap-3 p-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <a href={job.url} target="_blank" rel="noopener noreferrer nofollow" className="font-medium hover:underline" dir="auto">
+          {job.title}
+        </a>
+        <span className="text-xs text-muted-foreground" dir="auto">
+          {[showCompany ? job.company : null, job.location, job.workplaceType ? WORKPLACE[job.workplaceType] : null, job.department]
+            .filter(Boolean)
+            .join(" · ")}
+          {job.postedAt && ` · ${formatDateTime(job.postedAt)}`}
+        </span>
+      </div>
+      {auto ? (
+        <PrepareButton jobId={job.jobId} />
+      ) : (
+        <Button asChild variant="outline" size="sm">
+          <a href={job.url} target="_blank" rel="noopener noreferrer nofollow">
+            قدّم من موقعهم
+            <ExternalLinkIcon data-icon="inline-end" aria-hidden />
+          </a>
+        </Button>
+      )}
+      <JobStatusButtons jobId={job.jobId} status="new" />
+    </li>
+  );
+}
+
+/** «حدّد وقدّم على الكل» يصير في صفحة الوظائف: تأكيد واحد من الواجهة (قاعدة 8) */
+function BulkHint({ count }: { count: number }) {
+  if (count < 2) return null;
+  return (
+    <Button asChild variant="outline" size="sm" className="self-start">
+      <Link href="/jobs">
+        <ListChecksIcon data-icon="inline-start" aria-hidden />
+        قدّم عليها كلها من صفحة الوظائف
+      </Link>
+    </Button>
   );
 }
 
@@ -132,39 +189,147 @@ export function ToolPartView({ part, onAsk, busy }: { part: Part; onAsk: (text: 
             <BriefcaseBusinessIcon className="size-3.5" aria-hidden />
             {output.company.name} · {output.matched} مطابقة من {output.totalOpen} مفتوحة ·
             <a href={output.company.boardUrl} target="_blank" rel="noopener noreferrer nofollow" className="underline">
-              لوحة {output.company.ats} الرسمية
+              {output.autoApply === false ? "صفحة التوظيف في موقعهم" : `لوحة ${output.company.ats} الرسمية`}
             </a>
           </p>
+          {output.autoApply === false && (
+            <p className="text-xs text-muted-foreground">
+              الشركة ما تستخدم لوحة نقدر نقدّم عليها تلقائيًا: التقديم من موقعهم
+              {output.applyEmail ? " أو بالبريد." : "."}
+            </p>
+          )}
           {output.jobs.length === 0 ? (
             <p className="text-sm text-muted-foreground">ما فيه وظائف مطابقة الحين. تقدر تتابع الشركة ونبلغك بالجديد.</p>
           ) : (
             <ul className="divide-y rounded-lg border">
               {output.jobs.map((job) => (
-                <li key={job.jobId} className="flex flex-wrap items-center gap-3 p-3">
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <a
-                      href={job.url}
-                      target="_blank"
-                      rel="noopener noreferrer nofollow"
-                      className="font-medium hover:underline"
-                      dir="auto"
-                    >
-                      {job.title}
-                    </a>
-                    <span className="text-xs text-muted-foreground" dir="auto">
-                      {[job.location, job.workplaceType ? WORKPLACE[job.workplaceType] : null, job.department]
-                        .filter(Boolean)
-                        .join(" · ")}
-                      {job.postedAt && ` · ${formatDateTime(job.postedAt)}`}
-                    </span>
-                  </div>
-                  <PrepareButton jobId={job.jobId} />
-                  <JobStatusButtons jobId={job.jobId} status="new" />
+                <JobRow key={job.jobId} job={job} />
+              ))}
+            </ul>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {output.applyEmail && (
+              <Button asChild variant="outline" size="sm">
+                <a href={`mailto:${output.applyEmail}`}>
+                  <MailIcon data-icon="inline-start" aria-hidden />
+                  <span dir="ltr">{output.applyEmail}</span>
+                </a>
+              </Button>
+            )}
+            {output.autoApply !== false && <BulkHint count={output.jobs.length} />}
+            <FollowButton companyId={output.company.id} following={false} />
+          </div>
+        </div>
+      );
+    }
+
+    case "tool-searchJobs": {
+      if (part.state === "input-streaming" || part.state === "input-available") {
+        return <Pending label={`يبحث عن «${part.input?.titles?.join("، ") ?? ""}» في لوحات Greenhouse وLever وAshby…`} />;
+      }
+      if (part.state === "output-error") return <Failure text="فشل البحث عن الوظائف." />;
+      if (part.state !== "output-available") return null;
+      const output = part.output;
+      if (!output.ok) return <Failure text={output.error} />;
+      return (
+        <div className="flex flex-col gap-2">
+          <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <SearchIcon className="size-3.5" aria-hidden />
+            {output.total} وظيفة من {output.boards} شركة · كلها تقديم تلقائي · المصدر{" "}
+            {output.provider === "tavily" ? "Tavily" : "Exa"} · انضافت لصفحة الوظائف
+          </p>
+          {output.jobs.length === 0 ? (
+            <p className="text-sm text-muted-foreground">ما لقيت وظائف مفتوحة بهذا المسمى. جرّب مسمى أعم أو بدون مدينة.</p>
+          ) : (
+            <ul className="divide-y rounded-lg border">
+              {output.jobs.map((job) => (
+                <JobRow key={job.jobId} job={job} showCompany />
+              ))}
+            </ul>
+          )}
+          <BulkHint count={output.jobs.length} />
+        </div>
+      );
+    }
+
+    case "tool-searchNearbyCompanies": {
+      if (part.state === "input-streaming" || part.state === "input-available") {
+        return <Pending label={`يبحث في خرائط Google: ${part.input?.query ?? ""} · ${part.input?.area ?? ""}…`} />;
+      }
+      if (part.state === "output-error") return <Failure text="فشل البحث عن الشركات القريبة." />;
+      if (part.state !== "output-available") return null;
+      const output = part.output;
+      if (!output.ok) return <Failure text={output.error} />;
+      return (
+        <div className="flex flex-col gap-2">
+          <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <MapPinIcon className="size-3.5" aria-hidden />
+            {output.companies.length} شركة لها موقع رسمي
+            {output.withoutWebsite > 0 && ` · ${output.withoutWebsite} بدون موقع (ما نقدر نفحص وظائفها)`}
+          </p>
+          {output.companies.length > 0 && (
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {output.companies.map((company) => (
+                <li key={company.companyId} className="flex items-center justify-between gap-2 rounded-lg border p-3">
+                  <a
+                    href={`https://${company.domain}`}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                    className="inline-flex min-w-0 items-center gap-1 text-sm hover:underline"
+                    dir="ltr"
+                  >
+                    <span className="truncate">{company.domain}</span>
+                    <ExternalLinkIcon className="size-3 shrink-0" aria-hidden />
+                  </a>
+                  {company.ats !== "unknown" && <Badge variant="secondary">{ATS_LABEL[company.ats]}</Badge>}
                 </li>
               ))}
             </ul>
           )}
-          <FollowButton companyId={output.company.id} following={false} />
+          {output.note ? (
+            <Alert>
+              <AlertDescription>{output.note}</AlertDescription>
+            </Alert>
+          ) : (
+            output.checking && (
+              <p className="text-sm text-muted-foreground">
+                نفحص لوحة توظيف كل شركة أو صفحة الوظائف في موقعها بالخلفية. الي نلقاه ينضاف لصفحة الوظائف خلال دقايق.
+              </p>
+            )
+          )}
+          {output.checking && (
+            <Button asChild variant="outline" size="sm" className="self-start">
+              <Link href="/jobs">
+                <BriefcaseBusinessIcon data-icon="inline-start" aria-hidden />
+                صفحة الوظائف
+              </Link>
+            </Button>
+          )}
+        </div>
+      );
+    }
+
+    case "tool-addJobFromUrl": {
+      if (part.state === "input-streaming" || part.state === "input-available") {
+        return <Pending label="يجيب الوظيفة من لوحة الشركة الرسمية…" />;
+      }
+      if (part.state === "output-error") return <Failure text="فشل جلب الوظيفة من الرابط." />;
+      if (part.state !== "output-available") return null;
+      const output = part.output;
+      if (!output.ok) return <Failure text={output.error} />;
+      return (
+        <div className="flex flex-col gap-2">
+          <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <BriefcaseBusinessIcon className="size-3.5" aria-hidden />
+            {output.company.name} ·
+            <a href={output.company.boardUrl} target="_blank" rel="noopener noreferrer nofollow" className="underline">
+              لوحة {output.company.ats} الرسمية
+            </a>
+            · انضافت لصفحة الوظائف
+          </p>
+          <ul className="rounded-lg border">
+            <JobRow job={output.job} />
+          </ul>
         </div>
       );
     }

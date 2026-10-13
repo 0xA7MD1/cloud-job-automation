@@ -140,7 +140,7 @@ async function ApplicationsCard() {
   const { data } = await insforge.database.from("applications").select("status").eq("user_id", user.id);
   const count = (statuses: string[]) => ((data ?? []) as { status: string }[]).filter((r) => statuses.includes(r.status)).length;
   const rows = [
-    { label: "ينتظرك", value: count(["needs_user"]), href: "/applications?tab=active" },
+    { label: "ينتظرك", value: count(["needs_user", "needs_input"]), href: count(["needs_input"]) ? "/applications?tab=input" : "/applications?tab=active" },
     { label: "جاهزة للمراجعة", value: count(["ready", "failed"]), href: "/applications?tab=review" },
     { label: "شغّالة الحين", value: count(["preparing", "queued", "running"]), href: "/applications?tab=active" },
     { label: "انرسلت", value: count(["submitted"]), href: "/applications?tab=submitted" },
@@ -150,7 +150,7 @@ async function ApplicationsCard() {
     <Card>
       <CardHeader>
         <CardTitle>الطلبات</CardTitle>
-        <CardDescription>جهّز من الوظائف أو الشات، وقدّم من صفحة الطلب.</CardDescription>
+        <CardDescription>حدّد وظائف من صفحة الوظائف وقدّم عليها دفعة وحدة.</CardDescription>
       </CardHeader>
       <CardContent>
         <ul className="grid grid-cols-2 gap-3">

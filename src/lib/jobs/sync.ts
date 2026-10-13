@@ -1,4 +1,4 @@
-import type { Company, Job } from "@/lib/db/types";
+import type { Company, Job, JobSource } from "@/lib/db/types";
 import { getInsForgeAdminClient } from "@/lib/insforge/admin";
 import { fetchAtsJobs, isSupportedAts, type JobPosting, type SupportedAts } from "./ats";
 import { detectCompanyAts } from "./detect";
@@ -99,15 +99,28 @@ function chunks<T>(list: T[], size = CHUNK): T[][] {
  * الوظائف الي اختفت من اللوحة كمغلقة.
  */
 export async function syncCompanyJobs(company: ReadyCompany): Promise<SyncResult> {
-  const admin = getInsForgeAdminClient();
   const postings = await fetchAtsJobs(company.ats, company.ats_slug);
-
   if (postings === null) {
-    await admin.database.from("companies").update({ ats: "unknown", ats_slug: null }).eq("id", company.id);
+    await getInsForgeAdminClient().database.from("companies").update({ ats: "unknown", ats_slug: null }).eq("id", company.id);
     return { jobs: [], newJobIds: new Set(), boardGone: true };
   }
+  return { ...(await storeCompanyJobs(company.id, company.ats, postings)), boardGone: false };
+}
 
+/**
+ * يحفظ قائمة وظائف شركة من مصدر واحد (لوحة توظيف أو صفحة careers): إضافة/تحديث،
+ * والي اختفت من المصدر تنقفل. القائمة لازم تكون كاملة: قائمة ناقصة تقفل وظائف مفتوحة.
+ */
+export async function storeCompanyJobs(
+  companyId: string,
+  source: JobSource,
+  all: JobPosting[],
+  raw?: (posting: JobPosting) => Record<string, unknown> | null,
+): Promise<Omit<SyncResult, "boardGone">> {
+  const admin = getInsForgeAdminClient();
   const startedAt = new Date().toISOString();
+  // نفس الوظيفة مكررة في المصدر (Workable يكررها لكل موقع): التكرار بنفس الدفعة يرفضه upsert
+  const postings = [...new Map(all.map((p) => [p.externalId, p])).values()];
 
   // الموجود قبل المزامنة: عشان نعرف الجديد بدون الاعتماد على ساعة الخادم
   const known = new Set<string>();
@@ -115,7 +128,7 @@ export async function syncCompanyJobs(company: ReadyCompany): Promise<SyncResult
     const { data } = await admin.database
       .from("jobs")
       .select("external_id")
-      .eq("source", company.ats)
+      .eq("source", source)
       .in("external_id", ids);
     for (const row of (data ?? []) as { external_id: string }[]) known.add(row.external_id);
   }
@@ -126,7 +139,7 @@ export async function syncCompanyJobs(company: ReadyCompany): Promise<SyncResult
       .from("jobs")
       .upsert(
         batch.map((p) => ({
-          company_id: company.id,
+          company_id: companyId,
           source: p.source,
           external_id: p.externalId,
           title: p.title,
@@ -140,6 +153,7 @@ export async function syncCompanyJobs(company: ReadyCompany): Promise<SyncResult
           posted_at: p.postedAt,
           last_seen_at: startedAt,
           closed_at: null,
+          ...(raw ? { raw: raw(p) } : {}),
         })),
         { onConflict: "source,external_id" },
       )
@@ -148,21 +162,21 @@ export async function syncCompanyJobs(company: ReadyCompany): Promise<SyncResult
     for (const row of (data ?? []) as { id: string; external_id: string }[]) idByExternal.set(row.external_id, row.id);
   }
 
-  // اختفت من اللوحة ⇒ مغلقة
+  // اختفت من المصدر ⇒ مغلقة
   await admin.database
     .from("jobs")
     .update({ closed_at: startedAt })
-    .eq("company_id", company.id)
-    .eq("source", company.ats)
+    .eq("company_id", companyId)
+    .eq("source", source)
     .is("closed_at", null)
     .lt("last_seen_at", startedAt);
 
-  await admin.database.from("companies").update({ last_scanned_at: startedAt }).eq("id", company.id);
+  await admin.database.from("companies").update({ last_scanned_at: startedAt }).eq("id", companyId);
 
   const jobs: SyncedJob[] = postings.flatMap((p) => {
     const id = idByExternal.get(p.externalId);
     return id ? [{ ...p, id }] : [];
   });
   const newJobIds = new Set(jobs.filter((j) => !known.has(j.externalId)).map((j) => j.id));
-  return { jobs, newJobIds, boardGone: false };
+  return { jobs, newJobIds };
 }

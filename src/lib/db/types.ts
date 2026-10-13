@@ -13,6 +13,7 @@ export const PROVIDERS = [
   "exa",
   "tavily",
   "steel",
+  "google_places",
 ] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
@@ -22,6 +23,7 @@ export type FileKind = (typeof FILE_KINDS)[number];
 export type ApplicationStatus =
   | "draft"
   | "preparing"
+  | "needs_input"
   | "ready"
   | "queued"
   | "running"
@@ -210,6 +212,8 @@ export interface Application {
   outreach: Json;
   status_detail: string | null;
   prepared_at: Timestamp | null;
+  /** المستخدم أكّد دفعة تقديم: ينرسل لحاله أول ما تكمل إجاباته (الخادم يكتبه) */
+  auto_submit: boolean;
   created_at: Timestamp;
   updated_at: Timestamp;
 }
