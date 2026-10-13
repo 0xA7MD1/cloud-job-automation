@@ -2,14 +2,17 @@
 
 import { z } from "zod";
 import { readForm, readStoredAnswers, answerValueSchema, type StoredAnswers } from "@/lib/apply/form";
+import { MAX_BATCH } from "@/lib/apply/queue";
 import {
   cancelApplication,
   confirmSubmittedManually,
-  isOwnerAccount,
+  refreshReadiness,
   reprepareApplication,
   startApplication,
+  startBatch,
   submitApplication,
   triggerErrorMessage,
+  type BatchSummary,
 } from "@/lib/apply/service";
 import { requireUser } from "@/lib/auth";
 import type { Application } from "@/lib/db/types";
@@ -19,7 +22,7 @@ import { triggerRenderCoverLetter } from "@/lib/trigger/server";
 export type AppActionResult<T = undefined> = { ok: true; data: T } | { ok: false; error: string };
 
 /** حالات يقدر المستخدم يعدّل فيها (قبل أي محاولة إرسال) */
-const EDITABLE: Application["status"][] = ["draft", "ready", "failed", "cancelled"];
+const EDITABLE: Application["status"][] = ["draft", "needs_input", "ready", "failed", "cancelled"];
 
 export async function startApplicationAction(jobId: string): Promise<AppActionResult<{ id: string }>> {
   const id = z.uuid().safeParse(jobId);
@@ -53,8 +56,14 @@ async function loadEditable(applicationId: string) {
 
 const answersInput = z.record(z.string().max(300), answerValueSchema);
 
-/** يحفظ إجابات عدّلها المستخدم. المفاتيح لازم تكون من أسئلة النموذج. */
-export async function saveAnswersAction(applicationId: string, input: unknown): Promise<AppActionResult> {
+/**
+ * يحفظ إجابات عدّلها المستخدم. المفاتيح لازم تكون من أسئلة النموذج. يرجّع حالة الطلب بعدها:
+ * queued = كملت إجاباته وهو من دفعة تلقائية، فبدأ إرساله.
+ */
+export async function saveAnswersAction(
+  applicationId: string,
+  input: unknown,
+): Promise<AppActionResult<{ status: Application["status"] | null }>> {
   const parsed = answersInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: "إجابات غير صالحة." };
   const found = await loadEditable(applicationId);
@@ -77,7 +86,7 @@ export async function saveAnswersAction(applicationId: string, input: unknown): 
 
   const { error } = await found.insforge.database.from("applications").update({ answers: next }).eq("id", found.app.id);
   if (error) return { ok: false, error: "ما قدرنا نحفظ الإجابات." };
-  return { ok: true, data: undefined };
+  return { ok: true, data: { status: await refreshReadiness(found.insforge, found.user.id, found.app.id) } };
 }
 
 /** يحفظ نص الخطاب ويولّد PDF/Word من جديد في الخلفية */
@@ -95,7 +104,7 @@ export async function saveCoverLetterAction(applicationId: string, text: string)
   if (error) return { ok: false, error: "ما قدرنا نحفظ الخطاب." };
 
   try {
-    await triggerRenderCoverLetter(await isOwnerAccount(found.insforge, found.user.id), found.app.id);
+    await triggerRenderCoverLetter(found.app.id);
   } catch (e) {
     return { ok: false, error: `انحفظ النص، لكن ${triggerErrorMessage(e)}` };
   }
@@ -121,15 +130,30 @@ export async function selectCvAction(applicationId: string, fileId: string): Pro
 
   const { error } = await found.insforge.database.from("applications").update({ cv_file_id: fid.data }).eq("id", found.app.id);
   if (error) return { ok: false, error: "ما قدرنا نغيّر السيرة." };
+  await refreshReadiness(found.insforge, found.user.id, found.app.id);
   return { ok: true, data: undefined };
 }
 
 /** «قدّم الحين» بعد تأكيد المستخدم (النموذج ما عنده أداة إرسال: قاعدة 8) */
-export async function submitApplicationAction(applicationId: string): Promise<AppActionResult<{ id: string }>> {
+export async function submitApplicationAction(
+  applicationId: string,
+  provider?: string,
+): Promise<AppActionResult<{ id: string }>> {
   const id = z.uuid().safeParse(applicationId);
-  if (!id.success) return { ok: false, error: "طلب غير صالح." };
+  const browser = z.enum(["local", "steel"]).optional().safeParse(provider);
+  if (!id.success || !browser.success) return { ok: false, error: "طلب غير صالح." };
   const user = await requireUser();
-  return submitApplication(await createInsForgeServerClient(), user.id, id.data);
+  return submitApplication(await createInsForgeServerClient(), user.id, id.data, browser.data);
+}
+
+/** «قدّم على المحدد»: دفعة وظائف بتأكيد واحد (قاعدة 8) */
+export async function startBatchAction(jobIds: unknown, provider?: string): Promise<AppActionResult<BatchSummary>> {
+  const ids = z.array(z.uuid()).min(1).max(MAX_BATCH).safeParse(jobIds);
+  const browser = z.enum(["local", "steel"]).optional().safeParse(provider);
+  if (!ids.success) return { ok: false, error: `اختر من 1 إلى ${MAX_BATCH} وظيفة.` };
+  if (!browser.success) return { ok: false, error: "طلب غير صالح." };
+  const user = await requireUser();
+  return startBatch(await createInsForgeServerClient(), user.id, ids.data, browser.data);
 }
 
 export async function cancelApplicationAction(applicationId: string): Promise<AppActionResult> {

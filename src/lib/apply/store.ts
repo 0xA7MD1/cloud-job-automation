@@ -7,7 +7,7 @@ import { USER_FILES_BUCKET, buildObjectKey } from "@/lib/storage";
 // كل استعلام على جداول المستخدم بفلتر user_id صريح (AGENTS.md).
 
 export const APPLICATION_COLUMNS =
-  "id, user_id, job_id, status, answers, form, cv_file_id, cover_letter_file_id, cover_letter_docx_file_id, cover_letter_text, outreach, browser_provider, trigger_run_id, submit_attempted_at, submitted_at, confirmation_ref, evidence_file_id, status_detail, error, prepared_at, created_at, updated_at";
+  "id, user_id, job_id, status, answers, form, cv_file_id, cover_letter_file_id, cover_letter_docx_file_id, cover_letter_text, outreach, browser_provider, trigger_run_id, submit_attempted_at, submitted_at, confirmation_ref, evidence_file_id, status_detail, error, prepared_at, auto_submit, created_at, updated_at";
 
 export type JobWithCompany = Pick<
   Job,

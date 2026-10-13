@@ -36,14 +36,14 @@ export function HeaderNav() {
   const active = useActiveSection(IDS);
   return (
     <nav aria-label="أقسام الصفحة" className="absolute left-1/2 hidden -translate-x-1/2 lg:block">
-      <ul className="flex items-center gap-1 rounded-full border border-hairline bg-(--glass) p-1">
+      <ul className="flex items-center gap-1">
         {SECTION_LINKS.map(({ id, label }) => (
           <li key={id}>
             <a
               href={`#${id}`}
               aria-current={active === id ? "location" : undefined}
               className={cn(
-                "block rounded-full px-4 py-1.5 text-sm text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-foreground/55",
+                "block rounded-full px-4 py-2 text-[0.9375rem] text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-foreground/55",
                 active === id && "bg-foreground/10 text-foreground",
               )}
             >

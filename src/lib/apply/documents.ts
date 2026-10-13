@@ -74,7 +74,8 @@ export async function coverLetterPdf(input: CoverLetterInput): Promise<Buffer> {
       h(
         View,
         { style: { direction: rtl ? "rtl" : "ltr" } },
-        line(input.fullName, { fontSize: 16, fontWeight: "bold" }),
+        // lineHeight الصفحة ينحسب بحجم 11، فبدونه الاسم الكبير يركب على السطر الي تحته
+        line(input.fullName, { fontSize: 16, fontWeight: "bold", lineHeight: 1.4 }),
         ...input.contact.map((c) => line(c, { fontSize: 9.5, color: "#555555" })),
         line(formatDate(input.date, input.language), { marginTop: 18, fontSize: 10, color: "#555555" }),
         line(l.re, { marginTop: 10, fontWeight: "bold" }),

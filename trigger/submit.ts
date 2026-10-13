@@ -1,6 +1,7 @@
 import { logger, metadata, queue, task } from "@trigger.dev/sdk";
 import type { FilePayload, Outcome } from "@/lib/apply/adapters/common";
 import { readForm, readStoredAnswers } from "@/lib/apply/form";
+import { blockingMissing, missingDetail } from "@/lib/apply/queue";
 import {
   downloadFile,
   loadApplicant,
@@ -22,7 +23,9 @@ import { isSupportedAts } from "@/lib/jobs/ats";
 // - الانتظار للمستخدم داخل نفس الجلسة بحلقة تحقق، بدون wait.for
 // - مفتاح Steel ينفك هنا وما يطلع في المدخلات أو المخرجات أو السجلات
 
-const submitQueue = queue({ name: "submit-application", concurrencyLimit: 5 });
+// لكل مستخدم 3 متصفحات بنفس الوقت (concurrencyKey = user_id): دفعة 40 طلب تخلص بدون ما تفتح
+// 40 نافذة على جهاز المالك، وتحت حد Steel المجاني (10 جلسات)
+const submitQueue = queue({ name: "submit-application", concurrencyLimit: 3 });
 
 /** أقصى انتظار لتدخل المستخدم داخل الجلسة */
 const USER_WAIT_MS = 10 * 60_000;
@@ -56,6 +59,14 @@ export const submitApplicationTask = task({
     }
     const form = readForm(app.form);
     if (!form || !isSupportedAts(form.ats)) return fail("جهّز الطلب أول.", false);
+
+    // سؤال مطلوب بدون إجابة: ما نفتح متصفح (قاعدة 1). ينتظر جواب المستخدم، وبعده يكمل (لو من دفعة)
+    const missing = blockingMissing(app);
+    if (missing.length > 0) {
+      await updateApplication(app, { status: "needs_input", status_detail: missingDetail(missing), error: null });
+      metadata.set("step", "done");
+      return { skipped: "missing answers", missing: missing.length };
+    }
     const adapter = adapterFor(form.ats);
     if (!adapter) return fail("التقديم التلقائي على هذا النظام مو جاهز للحين.", false);
 
@@ -124,6 +135,7 @@ export const submitApplicationTask = task({
             return last;
           },
         },
+        { unattended: app.auto_submit },
       );
 
       if (result.status === "failed") {

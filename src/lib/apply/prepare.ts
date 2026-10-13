@@ -1,11 +1,11 @@
 import { getUserModel } from "@/lib/ai/model";
 import type { Application, Profile } from "@/lib/db/types";
 import { isSupportedAts } from "@/lib/jobs/ats";
-import { draftApplication, detectLanguage } from "./ai";
+import { answerMissing, draftApplication, detectLanguage, type DraftInput } from "./ai";
 import { autoAnswer } from "./answers";
 import { extractCvText } from "./cv-text";
 import { coverLetterDocx, coverLetterFileName, coverLetterPdf } from "./documents";
-import { missingRequired, readStoredAnswers, type ApplicationForm, type StoredAnswers } from "./form";
+import { missingRequired, readStoredAnswers, type ApplicationForm, type FormField, type StoredAnswers } from "./form";
 import { fetchApplicationForm } from "./forms";
 import {
   downloadFile,
@@ -62,6 +62,8 @@ export async function renderCoverLetterFiles(
 }
 
 export interface PrepareResult {
+  /** ready = كل المطلوب له إجابة، needs_input = ينتظر إجابات المستخدم */
+  status: "ready" | "needs_input";
   fields: number;
   autoAnswered: number;
   aiAnswered: number;
@@ -73,7 +75,23 @@ export interface PrepareResult {
 export async function prepareApplication(
   bundle: ApplicationBundle,
   onStep: (step: PrepareStep) => void = () => {},
+  options: {
+    /**
+     * مزود الذكاء رد 429: ننتظر ونعيد نفس الطلب (المهمة تنتظر بـwait.for). false = نكمل بدون ذكاء.
+     * داخل المهمة نفسها لأن إعادة المحاولة مقفلة في بيئة التطوير.
+     */
+    waitForRateLimit?: (attempt: number) => Promise<boolean>;
+  } = {},
 ): Promise<PrepareResult> {
+  const withRateLimit = async <T>(fn: () => Promise<T>): Promise<T> => {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        if (!isRateLimited(error) || !(await options.waitForRateLimit?.(attempt))) throw error;
+      }
+    }
+  };
   const { app, job } = bundle;
   const company = job.company;
   if (!company || !isSupportedAts(job.source) || !company.ats_slug) {
@@ -107,6 +125,11 @@ export async function prepareApplication(
     email: applicant.email,
   };
   const auto = autoAnswer(form.fields, ctx);
+  // إجابات عدّلها المستخدم بنفسه تبقى (إعادة التجهيز ما تمسحها) وما نسأل الذكاء عنها
+  const userEdited: StoredAnswers = Object.fromEntries(
+    Object.entries(readStoredAnswers(app.answers)).filter(([, a]) => a.source === "user"),
+  );
+  const pending = auto.pending.filter((f) => !userEdited[f.key]);
 
   onStep("ai");
   const model = await getUserModel(app.user_id);
@@ -115,36 +138,44 @@ export async function prepareApplication(
   let outreach: Application["outreach"] = app.outreach ?? {};
   let aiNote: string | null = null;
   if (model) {
+    const input: DraftInput = {
+      job: { title: job.title, company: company.name, location: job.location, description: job.description },
+      candidate: {
+        fullName: profile?.full_name ?? null,
+        headline: profile?.headline ?? null,
+        summary: profile?.summary ?? null,
+        yearsExperience: profile?.years_experience ?? null,
+        city: profile?.city ?? null,
+        country: profile?.country ?? null,
+      },
+      bank: applicant.bank,
+      cvText,
+      fields: pending,
+      language: detectLanguage(job.description ?? job.title),
+    };
+    let drafted = false;
     try {
-      const draft = await draftApplication(model.model, {
-        job: { title: job.title, company: company.name, location: job.location, description: job.description },
-        candidate: {
-          fullName: profile?.full_name ?? null,
-          headline: profile?.headline ?? null,
-          summary: profile?.summary ?? null,
-          yearsExperience: profile?.years_experience ?? null,
-          city: profile?.city ?? null,
-          country: profile?.country ?? null,
-        },
-        bank: applicant.bank,
-        cvText,
-        fields: auto.pending,
-        language: detectLanguage(job.description ?? job.title),
-      });
+      const draft = await withRateLimit(() => draftApplication(model.model, input));
       aiAnswers = draft.answers;
       coverLetter = draft.coverLetter || coverLetter;
       outreach = draft.outreach;
+      drafted = true;
     } catch (error) {
       aiNote = aiErrorMessage(error);
+    }
+    // مطلوب ورجع فاضي: جولة ثانية على هذي بس (أسئلة مفتوحة ينساها النموذج أو يتحفّظ عليها)
+    const stillEmpty = drafted ? unansweredRequired(pending, { ...auto.answers, ...aiAnswers }) : [];
+    if (stillEmpty.length > 0) {
+      try {
+        aiAnswers = { ...aiAnswers, ...(await withRateLimit(() => answerMissing(model.model, input, stillEmpty))) };
+      } catch {
+        // الجولة الأولى تكفي: الناقص يبان للمستخدم في «ينتظر جوابك»
+      }
     }
   } else {
     aiNote = "أضف مفتاح ذكاء من «المفاتيح» عشان نكتب خطاب التقديم ونجاوب الأسئلة الخاصة.";
   }
 
-  // إجابات عدّلها المستخدم بنفسه تبقى (إعادة التجهيز ما تمسحها)
-  const userEdited = Object.fromEntries(
-    Object.entries(readStoredAnswers(app.answers)).filter(([, a]) => a.source === "user"),
-  );
   const answers: StoredAnswers = { ...auto.answers, ...aiAnswers, ...userEdited };
 
   // Lever: «Additional information» = نص الخطاب
@@ -160,8 +191,14 @@ export async function prepareApplication(
     coverLetter: !!files || !!app.cover_letter_file_id,
   });
   const review = Object.values(answers).filter((a) => a.review).length;
+  const status = missing.length > 0 ? "needs_input" : "ready";
   const detail = [
-    missing.length ? `${missing.length} سؤال مطلوب بدون إجابة` : null,
+    missing.length
+      ? `ينتظر جوابك على ${missing.length === 1 ? "سؤال مطلوب" : `${missing.length} أسئلة مطلوبة`}: ${missing
+          .slice(0, 3)
+          .map((f) => f.label || f.key)
+          .join("، ")}${missing.length > 3 ? "…" : ""}`
+      : null,
     review ? `${review} إجابة تحتاج مراجعتك` : null,
     form.complete ? null : "ما قدرنا نقرأ كل أسئلة النموذج: بعضها ينكشف وقت التقديم",
     aiNote,
@@ -178,7 +215,7 @@ export async function prepareApplication(
       cover_letter_text: coverLetter || null,
       ...(files ? { cover_letter_file_id: files.pdfId, cover_letter_docx_file_id: files.docxId } : {}),
       outreach,
-      status: "ready",
+      status,
       status_detail: detail || null,
       error: null,
       prepared_at: new Date().toISOString(),
@@ -197,6 +234,7 @@ export async function prepareApplication(
   onStep("done");
 
   return {
+    status,
     fields: form.fields.length,
     autoAnswered: Object.keys(auto.answers).length,
     aiAnswered: Object.keys(aiAnswers).length,
@@ -209,8 +247,23 @@ export async function prepareApplication(
 /** خطأ متوقع برسالة للمستخدم (ما يستاهل إعادة محاولة) */
 export class PrepareError extends Error {}
 
+/** رقم حالة HTTP من خطأ AI SDK (بعد إعادة المحاولة يجي داخل lastError) */
+function statusOf(error: unknown): number | undefined {
+  const e = error as { statusCode?: number; lastError?: { statusCode?: number } } | null;
+  return e?.statusCode ?? e?.lastError?.statusCode;
+}
+
+function isRateLimited(error: unknown): boolean {
+  return statusOf(error) === 429;
+}
+
+/** حقول مطلوبة (غير الملفات) بدون إجابة للحين */
+function unansweredRequired(fields: readonly FormField[], answers: StoredAnswers): FormField[] {
+  return missingRequired({ fields: fields.filter((f) => f.type !== "file") }, answers, { cv: true, coverLetter: true });
+}
+
 function aiErrorMessage(error: unknown): string {
-  const status = (error as { statusCode?: number })?.statusCode;
+  const status = statusOf(error);
   if (status === 401 || status === 403) return "مفتاح الذكاء مرفوض: حدّثه من «المفاتيح».";
   if (status === 429) return "مزود الذكاء رفض لكثرة الطلبات: أعد التجهيز بعد شوي.";
   return "الذكاء ما رد بشكل صحيح: أعد التجهيز أو جرّب نموذج ثاني.";

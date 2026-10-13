@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { LogInIcon, MenuIcon } from "lucide-react";
+import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button, CtaIcon } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -17,7 +18,9 @@ export function MobileMenu() {
       </SheetTrigger>
       <SheetContent side="right" className="w-[min(20rem,85vw)] gap-0 border-hairline bg-background/95 backdrop-blur-xl">
         <SheetHeader className="px-6 pt-6">
-          <SheetTitle>مساعد التقديم</SheetTitle>
+          <SheetTitle>
+            <Logo />
+          </SheetTitle>
           <SheetDescription>يبحث ويقدّم على الوظائف عنك.</SheetDescription>
         </SheetHeader>
         <nav aria-label="أقسام الصفحة" className="px-3 py-2">

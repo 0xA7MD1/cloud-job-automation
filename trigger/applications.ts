@@ -1,21 +1,59 @@
-import { logger, metadata, queue, task } from "@trigger.dev/sdk";
+import { logger, metadata, queue, task, wait } from "@trigger.dev/sdk";
 import { PrepareError, prepareApplication, renderCoverLetterFiles } from "@/lib/apply/prepare";
+import { queueAutoSubmit } from "@/lib/apply/queue";
 import { loadApplication, updateApplication } from "@/lib/apply/store";
+import { submitApplicationTask } from "./submit";
 
 // تجهيز الطلب (الخطوة 7). المدخلات معرّف الطلب بس: السيرة والمفاتيح تنقرأ هنا وما تطلع في المخرجات.
 
+// دفعة 40 طلب = 40 تجهيز بمفتاح ذكاء واحد: اثنين بنفس الوقت لكل مستخدم (concurrencyKey = user_id)
+// عشان ما نصدم حد المزود المجاني بالدقيقة
+const prepareQueue = queue({ name: "prepare-application", concurrencyLimit: 2 });
+
+/** انتظار حد مزود الذكاء: 30ث، دقيقة، دقيقتين، ثم نكمل بدونه */
+const RATE_LIMIT_WAITS = [30, 60, 120];
+
 export const prepareApplicationTask = task({
   id: "prepare-application",
-  maxDuration: 300,
+  queue: prepareQueue,
+  maxDuration: 900,
   retry: { maxAttempts: 2 },
-  run: async ({ applicationId }: { applicationId: string }) => {
+  run: async ({ applicationId }: { applicationId: string }, { ctx }) => {
     const bundle = await loadApplication(applicationId);
     if (!bundle) return { skipped: "not found" };
     if (bundle.app.submit_attempted_at) return { skipped: "already submitted" };
     if (bundle.app.status !== "preparing") return { skipped: `status is ${bundle.app.status}` };
 
     try {
-      return await prepareApplication(bundle, (step) => metadata.set("step", step));
+      const result = await prepareApplication(bundle, (step) => metadata.set("step", step), {
+        waitForRateLimit: async (attempt) => {
+          const seconds = RATE_LIMIT_WAITS[attempt - 1];
+          if (!seconds) return false;
+          metadata.set("step", "ai_wait");
+          await wait.for({ seconds });
+          metadata.set("step", "ai");
+          return true;
+        },
+      });
+      if (result.status !== "ready" || !bundle.app.auto_submit) return result;
+      // Chrome المحلي يشتغل على جهاز المالك بس: تجهيز بدأ على السحابة ينتظر ضغطته
+      if (bundle.app.browser_provider === "local" && ctx.environment.type !== "DEVELOPMENT") return result;
+
+      // من دفعة أكّدها المستخدم: يتقدّم لحاله (نفس البيئة: جهاز المالك أو السحابة)
+      const fresh = await loadApplication(applicationId);
+      const queued = fresh
+        ? await queueAutoSubmit(fresh.app, () =>
+            submitApplicationTask.trigger(
+              { applicationId },
+              {
+                idempotencyKey: `submit-${applicationId}-auto-${ctx.run.id}`,
+                concurrencyKey: fresh.app.user_id,
+                tags: [`application_${applicationId}`],
+              },
+            ),
+          )
+        : "changed";
+      return { ...result, autoSubmit: queued };
     } catch (error) {
       if (error instanceof PrepareError) {
         await updateApplication(

@@ -17,14 +17,15 @@ const INTEGRATIONS = [
 
 export function WorksWith() {
   return (
-    <section aria-labelledby="works-with-title" className="py-14 sm:py-20">
-      <h2 id="works-with-title" className="text-center text-sm text-muted-foreground">
+    <section aria-labelledby="works-with-title" data-pause-offscreen className="py-14 sm:py-20">
+      <h2 id="works-with-title" data-reveal className="text-center font-sans text-sm text-muted-foreground">
         يشتغل مع
       </h2>
       <p className="sr-only">{INTEGRATIONS.map((i) => i.name).join("، ")}</p>
       {/* الشريط LTR: حركة marquee مبنية على translateX لليسار */}
       <div
         aria-hidden
+        data-reveal
         dir="ltr"
         className="mx-auto mt-6 max-w-6xl [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]"
       >

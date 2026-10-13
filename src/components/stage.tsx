@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 /** «المسرح»: إطار مدوّر بخلفية أفتح شوي، شبكة نقاط تتلاشى لتحت، وتوهّج خفيف من فوق (على طريقة sndr.sh) */
 export function Stage({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <div className={cn("relative isolate overflow-hidden rounded-[28px] border border-hairline bg-stage", className)}>
+    <div className={cn("relative isolate overflow-clip rounded-[28px] border border-hairline bg-stage", className)}>
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[36rem] bg-[radial-gradient(60%_70%_at_50%_0%,var(--stage-glow),transparent)]"

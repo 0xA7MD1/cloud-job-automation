@@ -1,5 +1,4 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { BlurFade } from "@/components/ui/blur-fade";
 import { SectionHeading } from "./section-heading";
 
 // الأجوبة من AGENTS.md بس. التسعير: «ابدأ مجانًا» من الصفحة القديمة، وتكلفة المزودين على حساب المستخدم.
@@ -33,19 +32,15 @@ const FAQ = [
 export function Faq() {
   return (
     <section id="faq" aria-labelledby="faq-title" className="mx-auto max-w-3xl px-4 py-20 sm:py-28">
-      <BlurFade inView direction="up">
-        <SectionHeading id="faq-title" eyebrow="الأسئلة" title="أسئلة تتكرر" />
-      </BlurFade>
-      <BlurFade inView direction="up" delay={0.1} className="mt-12">
-        <Accordion type="single" collapsible className="rounded-2xl border border-hairline bg-card/40 px-6">
-          {FAQ.map(({ q, a }, i) => (
-            <AccordionItem key={q} value={`q${i}`} className="border-hairline">
-              <AccordionTrigger className="py-5 text-base">{q}</AccordionTrigger>
-              <AccordionContent className="text-sm leading-relaxed text-muted-foreground">{a}</AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      </BlurFade>
+      <SectionHeading id="faq-title" eyebrow="الأسئلة" title="أسئلة تتكرر" />
+      <Accordion type="single" collapsible className="mt-12 rounded-2xl border border-hairline bg-card/40 px-6" data-reveal>
+        {FAQ.map(({ q, a }, i) => (
+          <AccordionItem key={q} value={`q${i}`} className="border-hairline" data-reveal>
+            <AccordionTrigger className="py-5 text-base">{q}</AccordionTrigger>
+            <AccordionContent className="text-sm leading-relaxed text-muted-foreground">{a}</AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
     </section>
   );
 }

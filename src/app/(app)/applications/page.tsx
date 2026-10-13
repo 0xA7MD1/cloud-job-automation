@@ -19,6 +19,7 @@ export const metadata: Metadata = { title: "الطلبات" };
 
 const TABS = [
   { id: "review", label: "للمراجعة", statuses: ["draft", "preparing", "ready", "failed"] },
+  { id: "input", label: "ينتظر جوابك", statuses: ["needs_input"] },
   { id: "active", label: "جارية", statuses: ["queued", "running", "needs_user"] },
   { id: "submitted", label: "انرسلت", statuses: ["submitted"] },
   { id: "cancelled", label: "ملغاة", statuses: ["cancelled"] },
@@ -32,7 +33,10 @@ type Row = Pick<Application, "id" | "status" | "status_detail" | "updated_at" | 
 export default function ApplicationsPage({ searchParams }: PageProps<"/applications">) {
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="الطلبات" description="جهّز الطلب من صفحة الوظائف أو الشات، راجعه هنا، وبعدها قدّم بضغطة.">
+      <PageHeader
+        title="الطلبات"
+        description="جهّز طلب أو حدّد وظائف كثيرة من صفحة الوظائف وقدّم عليها دفعة وحدة. الي ينقصه جوابك يستناك هنا."
+      >
         <Button asChild variant="cta">
           <Link href="/jobs">
             اختر وظيفة

@@ -64,6 +64,13 @@ export async function runSubmission(
   adapter: AtsAdapter,
   plan: FillPlan,
   hooks: SubmissionHooks,
+  options: {
+    /**
+     * من دفعة تلقائية: محد يتابع البث، فحقل ما انعبّى = نوقف قبل «إرسال» بدون محاولة
+     * (يقدر يعيد) بدل ما ننتظر المستخدم يكمّله. الكابتشا ورمز البريد بعد الضغط ينتظرونه دائمًا.
+     */
+    unattended?: boolean;
+  } = {},
 ): Promise<SubmissionResult> {
   hooks.step("open");
   const opened = await adapter.open(page, plan.form.applyUrl);
@@ -84,14 +91,22 @@ export async function runSubmission(
   const missing = requiredSkipped(fill);
   let outcome: Outcome;
 
+  if (missing.length > 0 && options.unattended) {
+    return {
+      status: "failed",
+      error: `ما قدرنا نعبّي حقول مطلوبة في صفحة التقديم: ${missing.slice(0, 5).join("، ")}. ما ضغطنا «إرسال»: صحّحها وأعد المحاولة، أو قدّم بنفسك.`,
+      attempted: false,
+      fill,
+    };
+  }
   if (missing.length > 0) {
-    // ناقص شي ما نعرفه: المستخدم يكمّله ويضغط «إرسال» بنفسه، ونحن نراقب صفحة التأكيد
+    // المتصفح ما قبل قيمة (خيار مو موجود، حقل اختفى): المستخدم يكمّله ويضغط «إرسال» بنفسه، ونحن نراقب صفحة التأكيد
     if (!(await hooks.markSubmitAttempted("handed_to_user"))) {
       return { status: "failed", error: "انسجّلت محاولة إرسال قبل: ما نعيد الإرسال. تحقق من بريدك.", attempted: true, fill };
     }
     hooks.step("needs_user");
     outcome = await hooks.waitForUser(
-      `كمّل الحقول الناقصة واضغط «إرسال» بنفسك: ${missing.slice(0, 5).join("، ")}`,
+      `ما قدرنا نعبّي هذي الحقول تلقائيًا: ${missing.slice(0, 5).join("، ")}. كمّلها واضغط «إرسال».`,
       () => adapter.outcome(page),
     );
   } else {

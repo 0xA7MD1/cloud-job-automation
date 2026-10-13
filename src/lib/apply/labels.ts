@@ -5,7 +5,8 @@ import type { ApplicationStatus } from "@/lib/db/types";
 export const STATUS_LABELS: Record<ApplicationStatus, string> = {
   draft: "مسودة",
   preparing: "يتجهّز",
-  ready: "جاهز للمراجعة",
+  needs_input: "ينتظر جوابك",
+  ready: "جاهز للتقديم",
   queued: "بالطابور",
   running: "يتقدّم الحين",
   needs_user: "ينتظرك",
@@ -17,6 +18,7 @@ export const STATUS_LABELS: Record<ApplicationStatus, string> = {
 export const STATUS_TONE: Record<ApplicationStatus, "default" | "secondary" | "destructive" | "outline"> = {
   draft: "outline",
   preparing: "secondary",
+  needs_input: "destructive",
   ready: "default",
   queued: "secondary",
   running: "secondary",

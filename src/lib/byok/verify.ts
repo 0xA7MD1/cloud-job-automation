@@ -129,6 +129,18 @@ export async function verifyProviderKey(provider: Provider, apiKey: string): Pro
       return { status: state === "ok" ? "valid" : state };
     }
 
+    case "google_places": {
+      // بحث «معرّفات بس» مجاني بلا حد عند Google: يتأكد إن المفتاح شغّال وPlaces API (New) مفعّل
+      const res = await call("https://places.googleapis.com/v1/places:searchText", {
+        method: "POST",
+        headers: { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": "places.id", "Content-Type": "application/json" },
+        body: JSON.stringify({ textQuery: "company office Riyadh", pageSize: 1 }),
+      });
+      const state = classify(res);
+      discardBody(res);
+      return { status: state === "ok" ? "valid" : state };
+    }
+
     case "steel": {
       const res = await call("https://api.steel.dev/v1/sessions?limit=1", {
         headers: { "steel-api-key": apiKey },

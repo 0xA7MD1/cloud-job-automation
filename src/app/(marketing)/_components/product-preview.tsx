@@ -1,9 +1,9 @@
 import { BriefcaseBusinessIcon, BuildingIcon, FileTextIcon, PaperclipIcon, SearchIcon, SendIcon, SparklesIcon } from "lucide-react";
 import { APP_NAV } from "@/components/app-nav";
+import { Logo } from "@/components/logo";
 import { Badge } from "@/components/ui/badge";
 import { BorderBeam } from "@/components/ui/border-beam";
 import { Button, CtaIcon } from "@/components/ui/button";
-import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { STATUS_LABELS } from "@/lib/apply/labels";
 import { cn } from "@/lib/utils";
 import { BrowserFrame } from "./browser-frame";
@@ -30,7 +30,7 @@ function AppMock() {
   return (
     <div className="flex h-[640px] text-start">
       <aside className="hidden w-52 shrink-0 flex-col gap-5 border-e border-hairline bg-sidebar/60 p-3 md:flex">
-        <p className="px-2 pt-1 text-sm font-semibold">مساعد التقديم</p>
+        <Logo className="px-2 pt-1 text-sm" />
         {APP_NAV.map((group) => (
           <div key={group.label} className="flex flex-col gap-0.5">
             <p className="px-2 pb-1 text-[11px] text-muted-foreground">{group.label}</p>
@@ -137,18 +137,25 @@ function AppMock() {
 export function ProductPreview({ className }: { className?: string }) {
   return (
     <div aria-hidden inert className={cn("relative w-full max-w-5xl select-none", className)}>
-      <div className="relative h-[500px] overflow-hidden sm:h-[540px]">
-        <BrowserFrame url="/chat" className="rounded-b-none">
-          <AppMock />
-          <BorderBeam
-            size={140}
-            duration={10}
-            colorFrom="var(--foreground)"
-            colorTo="transparent"
-            className="motion-reduce:hidden"
-          />
-        </BrowserFrame>
-        <ProgressiveBlur position="bottom" height="30%" />
+      <div className="relative h-[500px] overflow-clip sm:h-[540px]">
+        {/* الميلان على الإطار بس: backdrop-filter حق الطمس ينكسر داخل أب عليه تحويل 3D */}
+        <div data-tilt>
+          <BrowserFrame url="/chat" className="rounded-b-none">
+            <AppMock />
+            <BorderBeam
+              size={140}
+              duration={10}
+              colorFrom="var(--foreground)"
+              colorTo="transparent"
+              className="motion-reduce:hidden"
+            />
+          </BrowserFrame>
+        </div>
+        {/*
+          طمس تدريجي بطبقة وحدة: backdrop-blur وقناع متدرّج. ProgressiveBlur حق Magic UI (8 طبقات)
+          كان يجمّد السكرول ~160ms أول ما يتحرك الهيرو.
+        */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[30%] mask-[linear-gradient(to_bottom,transparent,black_80%)] backdrop-blur-md" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-stage to-transparent" />
       </div>
     </div>

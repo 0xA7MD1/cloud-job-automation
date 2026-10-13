@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 import { Stage } from "@/components/stage";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -9,9 +10,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <ThemeToggle className="absolute top-4 end-4" />
         <Link
           href="/"
-          className="rounded-full text-xl font-semibold outline-none focus-visible:ring-3 focus-visible:ring-foreground/55"
+          className="rounded-lg text-xl outline-none focus-visible:ring-3 focus-visible:ring-foreground/55"
         >
-          مساعد التقديم
+          <Logo />
         </Link>
         <div className="w-full max-w-sm [&_[data-slot=card]]:bg-card/70 [&_[data-slot=card]]:shadow-(--card-shadow) [&_[data-slot=card]]:backdrop-blur-xl">
           {children}

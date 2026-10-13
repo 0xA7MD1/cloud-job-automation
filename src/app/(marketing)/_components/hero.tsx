@@ -12,7 +12,7 @@ const enter =
 
 export function Hero() {
   return (
-    <section aria-labelledby="hero-title" className="px-2 pt-2 sm:px-3 sm:pt-3">
+    <section aria-labelledby="hero-title" data-pause-offscreen className="px-2 pt-2 sm:px-3 sm:pt-3">
       <Stage>
         <div className="mx-auto flex max-w-6xl flex-col items-center px-4 pt-32 text-center sm:pt-40">
           <a

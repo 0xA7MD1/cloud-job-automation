@@ -4,10 +4,78 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * خطوط ثمانية: من الجهاز بس (local)، وملفاتها ما تنرفع للريبو. ترخيصها يمنع إعادة التوزيع
+ * والاستضافة والتعديل، والريبو بيصير مفتوح المصدر. الي ما عنده الخط يشوف IBM Plex Sans Arabic.
+ */
+@font-face {
+  font-family: "Thmanyah Sans";
+  font-weight: 300;
+  src: local("thmanyah sans Light"), local("thmanyahsans-Light");
+}
+@font-face {
+  font-family: "Thmanyah Sans";
+  font-weight: 400;
+  src: local("thmanyah sans Regular"), local("thmanyahsans-Regular");
+}
+@font-face {
+  font-family: "Thmanyah Sans";
+  font-weight: 500;
+  src: local("thmanyah sans Medium"), local("thmanyahsans-Medium");
+}
+@font-face {
+  font-family: "Thmanyah Sans";
+  font-weight: 700;
+  src: local("thmanyah sans Bold"), local("thmanyahsans-Bold");
+}
+@font-face {
+  font-family: "Thmanyah Sans";
+  font-weight: 900;
+  src: local("thmanyah sans Black"), local("thmanyahsans-Black");
+}
+@font-face {
+  font-family: "Thmanyah Serif Display";
+  font-weight: 400;
+  src: local("thmanyah serif display Regular"), local("thmanyahserifdisplay-Regular");
+}
+@font-face {
+  font-family: "Thmanyah Serif Display";
+  font-weight: 500;
+  src: local("thmanyah serif display Medium"), local("thmanyahserifdisplay-Medium");
+}
+@font-face {
+  font-family: "Thmanyah Serif Display";
+  font-weight: 700;
+  src: local("thmanyah serif display Bold"), local("thmanyahserifdisplay-Bold");
+}
+@font-face {
+  font-family: "Thmanyah Serif Display";
+  font-weight: 900;
+  src: local("thmanyah serif display Black"), local("thmanyahserifdisplay-Black");
+}
+@font-face {
+  font-family: "Thmanyah Serif Text";
+  font-weight: 400;
+  src: local("thmanyah serif text Regular"), local("thmanyahseriftext-Regular");
+}
+@font-face {
+  font-family: "Thmanyah Serif Text";
+  font-weight: 500;
+  src: local("thmanyah serif text Medium"), local("thmanyahseriftext-Medium");
+}
+@font-face {
+  font-family: "Thmanyah Serif Text";
+  font-weight: 700;
+  src: local("thmanyah serif text Bold"), local("thmanyahseriftext-Bold");
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  /* h1 = Serif Display، h2 = Serif Text، الباقي Sans (القواعد في @layer base) */
+  --font-sans: "Thmanyah Sans", var(--font-plex), ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Thmanyah Serif Display", var(--font-plex), ui-serif, serif;
+  --font-serif: "Thmanyah Serif Text", var(--font-plex), ui-serif, serif;
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -54,6 +122,7 @@
   --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
   --animate-shiny-text: shiny-text 8s infinite;
   --animate-shine: shine var(--duration) infinite linear;
+  --animate-border-beam: border-beam 6s linear infinite;
 
   @keyframes marquee {
     from {
@@ -80,6 +149,14 @@
     30%,
     60% {
       background-position: calc(100% + var(--shiny-width)) 0;
+    }
+  }
+  @keyframes border-beam {
+    from {
+      offset-distance: var(--beam-from, 0%);
+    }
+    to {
+      offset-distance: var(--beam-to, 100%);
     }
   }
   @keyframes shine {
@@ -227,10 +304,33 @@
     @apply font-sans;
     scroll-behavior: smooth;
   }
+  h1 {
+    @apply font-display;
+  }
+  h2 {
+    @apply font-serif;
+  }
   /* الروابط الداخلية (#features …) ما تختفي تحت الهيدر العائم */
   section[id] {
     scroll-margin-top: 6rem;
   }
+}
+
+/*
+ * حالة data-reveal الأولى (LandingMotion يظهّرها مع السكرول). مخفية بس لو فيه JS وما فيه
+ * «تقليل حركة»، عشان المحتوى ما يضيع بدونها.
+ */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  [data-reveal]:not([data-revealed]) {
+    opacity: 0;
+  }
+}
+
+/* LandingMotion يحط data-offscreen على [data-pause-offscreen] وهو برّا الشاشة */
+[data-offscreen] *,
+[data-offscreen] *::before,
+[data-offscreen] *::after {
+  animation-play-state: paused !important;
 }
 
 /* تبديل الثيم بانتقال دائري (Magic UI) */
@@ -247,7 +347,8 @@
   .animate-marquee,
   .animate-marquee-vertical,
   .animate-shiny-text,
-  .animate-shine {
+  .animate-shine,
+  .animate-border-beam {
     animation: none !important;
   }
 }

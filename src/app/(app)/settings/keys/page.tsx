@@ -14,6 +14,7 @@ const SECTIONS: { kind: ProviderKind; title: string; description: string }[] = [
   { kind: "ai", title: "الذكاء الاصطناعي", description: "يكفي مزود واحد. الشات يستخدم الافتراضي." },
   { kind: "search", title: "البحث عن الشركات", description: "Tavily أو Exa. Tavily فيه حصة مجانية شهرية." },
   { kind: "browser", title: "المتصفح", description: "للتقديم الفعلي على النماذج." },
+  { kind: "places", title: "شركات قريبة", description: "اختياري: نلقى الشركات حولك من خرائط Google ونفحص صفحات توظيفها." },
 ];
 
 export default function KeysPage() {

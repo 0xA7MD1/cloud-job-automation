@@ -40,20 +40,20 @@ const buttonVariants = cva(
         "icon-sm":
           "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
         "icon-lg": "size-9",
-        // دائرة 40px بسطح glass (تبديل الثيم، قائمة الجوال)
+        // دائرة 44px بسطح glass (تبديل الثيم، قائمة الجوال)
         "icon-pill": cn(
           glassSurface,
-          "size-10 rounded-full p-0 active:not-aria-[haspopup]:scale-95 [&_svg:not([class*='size-'])]:size-[1.125rem]"
+          "size-11 rounded-full p-0 active:not-aria-[haspopup]:scale-95 [&_svg:not([class*='size-'])]:size-5"
         ),
       },
     },
     compoundVariants: [
-      { variant: "cta", size: "lg", className: "h-11 rounded-full px-5 text-sm has-data-[slot=cta-icon]:pe-2" },
-      { variant: "cta", size: "default", className: "h-10 rounded-full px-4 text-sm has-data-[slot=cta-icon]:pe-1.5" },
-      { variant: "cta", size: "sm", className: "h-9 gap-2 rounded-full px-3 text-xs has-data-[slot=cta-icon]:pe-1" },
-      { variant: "glass", size: "lg", className: "h-11 gap-2 rounded-full px-4" },
-      { variant: "glass", size: "default", className: "h-10 gap-2 rounded-full px-4" },
-      { variant: "glass", size: "sm", className: "h-9 gap-1.5 rounded-full px-3 text-xs" },
+      { variant: "cta", size: "lg", className: "h-13 rounded-full px-7 text-base has-data-[slot=cta-icon]:pe-2" },
+      { variant: "cta", size: "default", className: "h-11 rounded-full px-5 text-[0.9375rem] has-data-[slot=cta-icon]:pe-1.5" },
+      { variant: "cta", size: "sm", className: "h-9 gap-2 rounded-full px-3.5 text-[0.8125rem] has-data-[slot=cta-icon]:pe-1" },
+      { variant: "glass", size: "lg", className: "h-13 gap-2.5 rounded-full px-7 text-base [&_svg:not([class*='size-'])]:size-5" },
+      { variant: "glass", size: "default", className: "h-11 gap-2 rounded-full px-5 text-[0.9375rem]" },
+      { variant: "glass", size: "sm", className: "h-9 gap-1.5 rounded-full px-3.5 text-[0.8125rem]" },
     ],
     defaultVariants: {
       variant: "default",
@@ -85,14 +85,14 @@ function Button({
   )
 }
 
-/** دائرة السهم في آخر زر cta: ألوانها معكوسة عن الزر، والسهم يتحرك لزاويته عند المرور */
+/** دائرة السهم في آخر زر cta: ألوانها معكوسة عن الزر، والسهم يتحرك لزاويته عند المرور. حجمها يتبع حجم الزر */
 function CtaIcon({ className, children, ...props }: React.ComponentProps<"span">) {
   return (
     <span
       data-slot="cta-icon"
       aria-hidden
       className={cn(
-        "grid size-7 shrink-0 place-items-center rounded-full bg-(--cta-fg) text-(--cta-icon-fg)",
+        "grid size-8 shrink-0 place-items-center rounded-full bg-(--cta-fg) text-(--cta-icon-fg) group-data-[size=lg]/button:size-9 group-data-[size=sm]/button:size-7",
         className
       )}
       {...props}
