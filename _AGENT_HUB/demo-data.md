@@ -17,7 +17,7 @@ pnpm seed:demo:clean
 ## Handoff
 **Done:**
 1. `scripts/seed-demo.mjs` + `pnpm seed:demo` / `pnpm seed:demo:clean`. Re-running resets the data.
-2. Seeded into `mrsftls@gmail.com`: 6 companies, 15 jobs, 8 applications (ready ×2, needs_user, submitted, failed ×2, cancelled, draft), 30 events, 7 files, 2 chats, fake profile.
+2. Seeded into the owner account: 6 companies, 15 jobs, 8 applications (ready ×2, needs_user, submitted, failed ×2, cancelled, draft), 30 events, 7 files, 2 chats, fake profile.
 3. Checked: every app passes `readForm` / `missingRequired`, all 7 files download, quota = 3/500.
 4. Fixed in `src/lib/apply/documents.ts`: name overlapped the email line in every cover letter PDF.
 
