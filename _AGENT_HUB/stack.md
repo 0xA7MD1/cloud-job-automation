@@ -1,6 +1,6 @@
 # stack — Job-apply bot
 
-**Status:** runs locally. InsForge + Trigger.dev connected. Your account (`mrsftls@gmail.com`) is **owner** → applications use Chrome on your PC, free.
+**Status:** runs locally. InsForge + Trigger.dev connected. Your account is **owner** → applications use Chrome on your PC, free.
 
 ---
 
