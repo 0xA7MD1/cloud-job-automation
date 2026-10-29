@@ -13,6 +13,7 @@ const schema = {
       message: "لازم يكون 32 بايت بترميز base64",
     }),
   TRIGGER_SECRET_KEY: z.string().min(1),
+  CRON_SECRET: z.string().min(1),
 } as const;
 
 export type EnvName = keyof typeof schema;
